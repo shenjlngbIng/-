@@ -1,5 +1,5 @@
 # 规则名称: ChatGPT
-# 规则统计: 31
+# 规则统计: 34
 
 DOMAIN-SUFFIX,chat.com
 DOMAIN-SUFFIX,chatgpt.com
@@ -9,6 +9,11 @@ DOMAIN-SUFFIX,oaistatsig.com
 DOMAIN-SUFFIX,openai.com
 DOMAIN-SUFFIX,openaimerge.com
 DOMAIN-SUFFIX,sora.com
+
+# Coldvvater OpenAI 规则中的低误伤兼容域名
+DOMAIN,client-api.arkoselabs.com
+DOMAIN,js.intercomcdn.com
+DOMAIN,openaiapi-site.azureedge.net
 
 # ChatGPT Voice 官方 UDP 入站地址（来源：openai.com/chatgpt-voice.json）
 IP-CIDR,102.37.57.54/32,no-resolve
