@@ -1,10 +1,6 @@
 # 规则名称: TikTok
-# 规则统计: 83
+# 规则统计: 76
 
-DOMAIN,api.snapkit.com
-DOMAIN,cocacola.co.jp
-DOMAIN,courses.snapsolve.com
-DOMAIN,engagements.appsflyer.com
 DOMAIN,lf16-campaign.ttlstatic.com
 DOMAIN,lf16-csp.oecstatic.com
 DOMAIN,lf16-pkgcdn.pitaya-clientai.com
@@ -19,8 +15,6 @@ DOMAIN,p1-tt.byteimg.com
 DOMAIN,p26-tt.byteimg.com
 DOMAIN,p3-tt-ipv6.byteimg.com
 DOMAIN,p9-tt.byteimg.com
-DOMAIN,roovza-launches.appsflyersdk.com
-DOMAIN-SUFFIX,bytedance.com
 DOMAIN-SUFFIX,bytedance.net
 DOMAIN-SUFFIX,bytedapm.com
 DOMAIN-SUFFIX,bytefcdn-oversea.com
@@ -42,7 +36,6 @@ DOMAIN-SUFFIX,isnssdk.com
 DOMAIN-SUFFIX,muscdn.com
 DOMAIN-SUFFIX,musemuse.cn
 DOMAIN-SUFFIX,musical.ly
-DOMAIN-SUFFIX,pstatp.com
 DOMAIN-SUFFIX,sgpstatp.com
 DOMAIN-SUFFIX,sgsnssdk.com
 DOMAIN-SUFFIX,tik-tokapi.com
