@@ -75,8 +75,10 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 
 ## DNS 行为
 
-- 传统 DNS：系统 DNS、`223.5.5.5`、`119.29.29.29`。
-- 加密 DNS：阿里、腾讯、Cloudflare、Google 四个 DoH 端点。
+- 传统 DNS：`223.5.5.5`、`119.29.29.29`。不使用 `system`，避免部分路由器下发的
+  `192.168.1.1:53` 不响应并反复触发超时告警。
+- 加密 DNS：阿里与腾讯两个 DoH 端点。当前网络无法稳定直连的 Cloudflare、Google
+  DoH 不加入全局列表，避免每次解析都产生无效等待和超时通知。
 - `encrypted-dns-follow-outbound-mode=false`，因此 DoH 自身使用 DIRECT 建连，避免
   代理订阅和 DNS 互相依赖形成启动死锁。
 - 启用 DoH 后，传统 DNS 主要用于网络检测和解析 DoH 服务器自身，并不是普通查询
@@ -93,7 +95,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 2. 检查 `Proxy` 是否仍选中 `Auto`，再尝试切换为 `Fallback`。
 3. 对具体节点执行代理测试；仅显示节点名称不代表节点当前可连接。
 4. 查看 Surge 请求日志，确认实际链路是否为服务组、`Proxy`、`Auto`、具体节点。
-5. 若所有域名都无法解析，再检查四个 DoH 端点在当前网络是否可达。
+5. 若所有域名都无法解析，再检查阿里、腾讯两个 DoH 端点在当前网络是否可达。
 
 ### 只有 ChatGPT Voice 不可用
 
