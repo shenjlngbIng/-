@@ -111,8 +111,6 @@ https://cdn.jsdelivr.net/gh/shenjlngbIng/-@9b1432d57c9ea26ef24ea037481189743f1d7
 - Host List：<https://manual.nssurge.com/others/host-list.html>
 - Rule Set：<https://manual.nssurge.com/rule/ruleset.html>
 - Smart 策略：<https://kb.nssurge.com/surge-knowledge-base/zh/guidelines/smart-group>
-- Fallback 策略：<https://manual.nssurge.com/policy-group/fallback.html>
-- 通用策略参数：<https://manual.nssurge.com/policy/parameters.html>
 
 这些文档用于说明 Surge 语法和行为，不表示 Surge Networks Inc. 对本项目进行审核、合作或背书。
 
@@ -156,7 +154,7 @@ Apple、iOS、APNs、iCloud、App Store、Telegram、GitHub、Google、Microsoft
 
 - 国内直连服务会看到用户真实公网 IP。
 - Apple Push 在代理全部失效后可能直连，从而向 Apple 暴露真实公网 IP。
-- 普通 DoH 经代理时，解析服务商看到代理出口 IP；APNs 专用直连 DoH 会看到真实出口 IP。两者均能处理相应查询内容，但传输链路由 TLS 保护。
+- DoH 服务商能够看到来源 IP 和 DNS 查询内容，但查询在传输链路上由 TLS 保护。
 - 代理服务商能够观察连接元数据，目标服务通常看到代理出口 IP。
 - GitHub、jsDelivr 和连通性测试服务能够看到规则下载或探测请求的出口 IP。
 - 第三方模块、脚本、MITM、其他 VPN 和系统网络扩展可能覆盖或绕过主配置行为。
