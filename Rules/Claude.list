@@ -1,9 +1,0 @@
-# Claude Web、API、Platform、Code 与桌面端
-DOMAIN-SUFFIX,claude.ai
-DOMAIN-SUFFIX,claude.com
-DOMAIN-SUFFIX,anthropic.com
-DOMAIN-SUFFIX,claudeusercontent.com
-
-# Anthropic 官方入站地址
-IP-CIDR,160.79.104.0/23,no-resolve
-IP-CIDR6,2607:6bc0::/48,no-resolve
