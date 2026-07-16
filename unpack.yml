@@ -1,0 +1,40 @@
+name: Validate Surge ZIP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Require the candidate archive
+        run: |
+          test -f Surge.zip
+
+      - name: Stage allowlisted files safely
+        run: |
+          python3 tools/stage_surge_zip.py Surge.zip "${RUNNER_TEMP}/surge-candidate"
+
+      - name: Audit the staged profile
+        run: |
+          python3 tools/audit_config.py "${RUNNER_TEMP}/surge-candidate/Surge.conf"
+          if test -d "${RUNNER_TEMP}/surge-candidate/Rules"; then
+            python3 tools/audit_rules.py "${RUNNER_TEMP}/surge-candidate/Rules"
+          fi
+
+      - name: Upload candidate for manual review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: surge-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/surge-candidate
+          if-no-files-found: error
+          retention-days: 7
