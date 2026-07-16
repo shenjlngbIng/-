@@ -167,8 +167,8 @@ def main() -> int:
         "encrypted-dns-server": "https://223.5.5.5/dns-query",
         "skip-proxy": "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, localhost, *.local, *.lan, ::1/128, fc00::/7, fe80::/10",
         "loglevel": "warning",
-        "internet-test-url": "https://www.apple.com/library/test/success.html",
-        "proxy-test-url": "https://www.gstatic.com/generate_204",
+        "internet-test-url": "http://www.apple.com/library/test/success.html",
+        "proxy-test-url": "http://www.gstatic.com/generate_204",
         "test-timeout": "8",
         "show-error-page-for-reject": "false",
         "always-real-ip": "<simple-hostname>, *.lan, *.local, *.direct, *.cmpassport.com, id6.me, open.e.189.cn, mdn.open.wo.cn, opencloud.wostore.cn, auth.wosms.cn, *.10099.com.cn",
@@ -189,8 +189,8 @@ def main() -> int:
 
     for key in ("internet-test-url", "proxy-test-url"):
         item = general.get(key)
-        if not item or not item[1].lower().startswith("https://"):
-            fail(f"{key} must use HTTPS", item[0] if item else None)
+        if not item or not item[1].lower().startswith("http://"):
+            fail(f"{key} must use an HTTP endpoint supported by Surge iOS testing", item[0] if item else None)
 
     encrypted_dns = general.get("encrypted-dns-server")
     if encrypted_dns and not re.fullmatch(r"https://(?:\d{1,3}\.){3}\d{1,3}/dns-query", encrypted_dns[1]):
@@ -238,7 +238,7 @@ def main() -> int:
             fail("Fail-Closed must remain the local unreachable sentinel", number)
         if name == "APNs Direct" and fields != [
             "direct",
-            "test-url=https://www.apple.com/library/test/success.html",
+            "test-url=http://www.apple.com/library/test/success.html",
             "test-timeout=5",
         ]:
             fail("APNs Direct definition changed", number)
