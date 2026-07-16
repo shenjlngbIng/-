@@ -7,7 +7,7 @@
 
 ## 当前状态
 
-最后审计日期：**2026-07-16**
+最后审计日期：**2026-07-17**
 
 | 项目 | 当前值 |
 | --- | --- |
@@ -22,7 +22,7 @@
 | 允许包含直连的策略组 | `Domestic`、`Apple`、`Apple Push` |
 | 本地规则快照 | 32 个文件、132599 条有效项 |
 | 独立带宽测速功能/策略组 | 不包含 |
-| 必要健康/延迟检测 | 保留，全部使用 HTTPS |
+| 必要健康/延迟检测 | 保留，使用 Surge iOS 兼容的 HTTP 探测端点 |
 | 运行时节点订阅 | 不包含 |
 | MITM、脚本、URL Rewrite | 不包含 |
 | Wi-Fi/热点共享、HTTP API、Web 面板 | 未开放 |
@@ -76,7 +76,7 @@
 | --- | --- | --- | --- |
 | `Final` | `select` | 否 | 所有未知流量进入 `Proxy` |
 | `Proxy` | `select` | 否 | 代理总入口，只能选自动、全部节点或地区组 |
-| `Auto` | `url-test` | 否 | 从 `AllServer` 中按 HTTPS 延迟选择节点 |
+| `Auto` | `url-test` | 否 | 从 `AllServer` 中按 HTTP 探测延迟选择节点 |
 | `AllServer` | `select` | 否 | 只收集本地 `[Proxy]` 内经审核的节点 |
 | `HongKong` 等地区组 | `url-test` | 否 | 按节点名称筛选并测试地区节点 |
 | 各境外服务组 | `select` | 否 | AI、开发、流媒体、社交和游戏平台分流 |
@@ -309,11 +309,11 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 
 | 用途 | 地址 | 行为 |
 | --- | --- | --- |
-| 互联网连通性 | `https://www.apple.com/library/test/success.html` | 检查基础网络可达性 |
-| 代理节点检测 | `https://www.gstatic.com/generate_204` | 经被测代理检查可用性和延迟 |
-| APNs 直连检测 | Apple HTTPS 成功页 | 判断 APNs 直连候选是否可用 |
+| 互联网连通性 | `http://www.apple.com/library/test/success.html` | 通过明确允许直连的 Apple 目标检查基础网络可达性 |
+| 代理节点检测 | `http://www.gstatic.com/generate_204` | 仅经被测代理检查可用性和延迟 |
+| APNs 直连检测 | Apple HTTP 成功页 | 判断 APNs 直连候选是否可用 |
 
-检测地址均为 HTTPS。`url-test` 和地区组设置 `interval=600`、`evaluate-before-use=true`；结果过期并在需要使用时会重新评估。它们测试的是连通性和延迟，不衡量吞吐能力。
+Surge iOS 的连通性与策略测试使用 HTTP 探测端点，并以 HTTP 请求进行可用性/延迟判断；这不是带宽测速。明文探测可能被链路观察或伪造，因此其结果只用于健康状态和代理候选排序：Apple 探测属于既有明确直连，Google 探测只经被测代理发送；相关策略组不存在通往 `DIRECT` 的意外回退路径。`url-test` 和地区组设置 `interval=600`、`evaluate-before-use=true`，结果过期并在需要使用时重新评估。
 
 隐私上，Apple 或 Google 可能看到对应探测请求的出口 IP、时间和基础连接元数据。详情见 `NOTICE.md`。
 
