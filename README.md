@@ -19,7 +19,7 @@
 | 策略组 | 33 |
 | 主配置有效规则 | 323 |
 | 运行时远程规则集 | 22 |
-| 主配置引用的本地候选快照 | 22 个文件、8115 条有效项 |
+| 主配置引用的固定快照 | 22 个文件、8115 条有效项 |
 | 允许包含直连的策略组 | `Domestic`、`Apple`、`Apple Push` |
 | 本地规则快照 | 32 个文件、132575 条有效项 |
 | 独立带宽测速功能/策略组 | 不包含 |
@@ -388,7 +388,7 @@ PASS: Rules | files=32 active_entries=132575 target=Surge-iOS runtime_files=22 r
 当前主配置加载 22 个本仓库规则快照。每个 URL 都固定到：
 
 ```text
-9b1432d57c9ea26ef24ea037481189743f1d73f6
+8099f3036f0f1ebde038abff98cbaec9409cd430
 ```
 
 这些远程规则只能进入代理或拒绝策略。固定提交能够防止上游同一路径静默改变内容，但不能证明文件本身无误、来源完整或许可证兼容。
@@ -401,9 +401,9 @@ PASS: Rules | files=32 active_entries=132575 target=Surge-iOS runtime_files=22 r
 
 `Rules/` 中既有当前主配置使用的文件，也有未启用的来源/归档快照。发布包只携带当前主配置实际引用的 22 个规则文件，避免把未使用内容扩大到交付面。
 
-当前 Surge iOS 候选集为 22 个文件、8115 条有效项；整个 `Rules/` 为 32 个文件、132575 条有效项。本轮按移动端能力做了以下过滤：
+当前 Surge iOS 固定集为 22 个文件、8115 条有效项；整个 `Rules/` 为 32 个文件、132575 条有效项。本轮按移动端能力做了以下过滤：
 
-候选集类型分布为：`DOMAIN` 414、`DOMAIN-KEYWORD` 189、`DOMAIN-SUFFIX` 7284、`DOMAIN-WILDCARD` 15、`IP-ASN` 2、`IP-CIDR` 154、`IP-CIDR6` 6、`USER-AGENT` 50、`AND` 1。
+固定集类型分布为：`DOMAIN` 414、`DOMAIN-KEYWORD` 189、`DOMAIN-SUFFIX` 7284、`DOMAIN-WILDCARD` 15、`IP-ASN` 2、`IP-CIDR` 154、`IP-CIDR6` 6、`USER-AGENT` 50、`AND` 1。
 
 - 删除 21 条 `PROCESS-NAME`。这些条目来自 macOS 或 Android 进程名语义，Surge iOS 不执行它们。
 - 删除 3 条宽泛 `URL-REGEX`。本配置不启用 MITM，路径级 HTTPS 匹配不可作为可靠规则边界，宽泛正则还会增加误杀风险。

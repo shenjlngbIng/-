@@ -155,7 +155,7 @@ GPL v2 副本：`THIRD_PARTY_LICENSES/blackmatrix7-GPL-2.0.txt`
 主配置当前通过以下固定前缀加载本仓库规则：
 
 ```text
-https://cdn.jsdelivr.net/gh/shenjlngbIng/-@9b1432d57c9ea26ef24ea037481189743f1d73f6/Rules/
+https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd430/Rules/
 ```
 
 固定提交只用于限制内容静默变化和提高可复现性，不改变文件原作者、版权或许可证。通过本仓库或 jsDelivr 下载不代表规则全部由本仓库维护者原创，也不代表 CDN 对规则进行安全或许可审查。
@@ -175,7 +175,7 @@ https://cdn.jsdelivr.net/gh/shenjlngbIng/-@9b1432d57c9ea26ef24ea037481189743f1d7
 
 ### 6.3 Surge iOS 本地修改与能力过滤
 
-当前 22 个运行时候选文件共有 8115 条有效项；完整 `Rules/` 目录共有 32 个文件、132575 条有效项。本轮本地修改包括：
+当前 22 个运行时固定文件共有 8115 条有效项；完整 `Rules/` 目录共有 32 个文件、132575 条有效项。本轮本地修改包括：
 
 - 从 6 个活动文件删除 21 条 `PROCESS-NAME`。其中包含 macOS 可执行文件名和 Android 包名；Surge iOS 会忽略该规则类型。
 - 从 `Ads_SukkaW_Extra.list` 删除 3 条宽泛 `URL-REGEX`。本配置没有 MITM，不把 URL 路径匹配视为可靠的移动端过滤边界。
@@ -185,7 +185,7 @@ https://cdn.jsdelivr.net/gh/shenjlngbIng/-@9b1432d57c9ea26ef24ea037481189743f1d7
 
 这些属于平台适配和本地删改，不改变上游权利归属，也不把删改后的文件变成本项目独立原创。
 
-本地候选只有先提交到仓库、取得新的完整 40 位提交号，再由后续提交同时更新 `Surge.conf` 与 `tools/audit_config.py` 的固定前缀后，才会成为 Surge 实际下载的版本。未完成重新固定前，客户端仍读取 6.1 节列出的旧提交；不得为了省略这一步改用 `main`、`master` 或 `release`。
+本轮已按两阶段流程完成候选规则提交核对，并将 `Surge.conf` 与 `tools/audit_config.py` 的固定前缀同步指向提交 `8099f3036f0f1ebde038abff98cbaec9409cd430`。该提交中的 22 个规则文件已逐一核对，内容与本地审核版本一致；后续更新仍不得改用 `main`、`master` 或 `release`。
 
 ### 6.4 当前未启用的 10 个快照
 
