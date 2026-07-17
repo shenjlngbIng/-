@@ -7,6 +7,7 @@ import ipaddress
 import re
 import sys
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 
 DIRECT_GROUPS_ALLOWED = {"Domestic", "Apple", "Apple Push"}
@@ -42,6 +43,30 @@ ALLOWED_RULE_TYPES = {
 DIRECT_RULE_TYPES = {"AND", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "IP-CIDR6"}
 REMOTE_RULE_PREFIXES = {
     "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@9b1432d57c9ea26ef24ea037481189743f1d73f6/Rules/",
+}
+RUNTIME_RULE_FILES = {
+    "Ads_SukkaW_Extra.list",
+    "Bahamut.list",
+    "BiliBiliIntl.list",
+    "ChatGPT.list",
+    "Claude.list",
+    "Disney.list",
+    "Emby.list",
+    "Game.list",
+    "Gemini.list",
+    "Github.list",
+    "Google.list",
+    "HBO.list",
+    "Microsoft.list",
+    "Netflix.list",
+    "OneDrive.list",
+    "PrimeVideo.list",
+    "ProxyMedia.list",
+    "Reject.list",
+    "Spotify.list",
+    "TikTok.list",
+    "Twitter.list",
+    "YouTube.list",
 }
 DIRECT_IP_RULES = {
     ("IP-CIDR", "10.0.0.0/8", "DIRECT"),
@@ -389,6 +414,7 @@ def main() -> int:
     push_index = apple_suffix_index = None
     final_entries: list[tuple[int, str]] = []
     remote_count = 0
+    remote_files: dict[str, int] = {}
 
     for index, (number, line) in enumerate(rules):
         upper = line.upper()
@@ -452,6 +478,18 @@ def main() -> int:
         if len(fields) >= 2 and fields[0].upper() in {"RULE-SET", "DOMAIN-SET"} and fields[1].startswith(("http://", "https://")):
             remote_count += 1
             url = fields[1]
+            parsed_url = urlsplit(url)
+            filename = Path(unquote(parsed_url.path)).name
+            if parsed_url.query or parsed_url.fragment:
+                fail(f"remote rule URL must not contain a query or fragment: {url}", number)
+            if filename in remote_files:
+                fail(
+                    f"duplicate remote rule file: {filename} "
+                    f"(first referenced at line {remote_files[filename]})",
+                    number,
+                )
+            else:
+                remote_files[filename] = number
             if not url.startswith("https://"):
                 fail(f"remote rule must use HTTPS: {url}", number)
             if not any(url.startswith(prefix) for prefix in REMOTE_RULE_PREFIXES):
@@ -479,6 +517,12 @@ def main() -> int:
         fail("FINAL must be the last active rule", final_entries[0][0])
     if remote_count != 22:
         fail(f"expected 22 immutable remote rules, found {remote_count}")
+    missing_remote_files = sorted(RUNTIME_RULE_FILES - remote_files.keys())
+    unexpected_remote_files = sorted(remote_files.keys() - RUNTIME_RULE_FILES)
+    if missing_remote_files:
+        fail(f"required runtime rule files are missing: {', '.join(missing_remote_files)}")
+    if unexpected_remote_files:
+        fail(f"unapproved runtime rule files are present: {', '.join(unexpected_remote_files)}")
 
     if errors:
         for error in errors:
