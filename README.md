@@ -5,6 +5,23 @@
 > [!IMPORTANT]
 > 公开模板不包含任何真实代理节点，不能直接当作完整可用配置。未加入节点时，境外和未知流量会按设计失败关闭；普通域名的 DoH 也无法建立，因此依赖普通 DNS 解析的国内或 Apple 域名可能同样不可用。局域网、IP 字面量目标，以及使用专用直连 DoH 的 APNs 路径，可能仍按各自规则工作。
 
+## Surge 配置订阅地址
+
+**可更新地址（跟随 `main`）：**
+
+```text
+https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
+```
+
+**当前固定审计版（不随 `main` 变化）：**
+
+```text
+https://raw.githubusercontent.com/shenjlngbIng/-/c5241bc5c2ae229962edcdffcb3a927c4e87b974/Surge.conf
+```
+
+> [!WARNING]
+> 上述地址是 **Surge 配置订阅地址**，不是代理节点/机场订阅地址。公开模板的 **代理节点订阅地址：未配置**。不要把包含 Token、用户名、密码或签名参数的私人订阅 URL 提交到本仓库；应在私有副本中加入经过审核的静态节点。
+
 ## 当前状态
 
 最后审计日期：**2026-07-17**
@@ -296,7 +313,7 @@ APNs 不是普通 Apple 直连规则，而是单独的两级策略：
 7. 检查 `Domestic`、`Apple` 和 `Apple Push` 的选择符合自己的真实 IP 暴露偏好。
 8. 确认设备没有额外模块、MITM、脚本或网络扩展覆盖主配置。
 
-主配置 Raw 地址：
+Surge 配置订阅地址（可更新，与文首相同）：
 
 ```text
 https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
