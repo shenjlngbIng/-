@@ -1,4 +1,5 @@
-# Generated from Ads_SukkaW.list — non-domain rules retained for Surge RULE-SET
+# Generated from Ads_SukkaW.list — Surge iOS-compatible non-domain rules only
+# Local filter: broad URL-REGEX entries are omitted because this profile has no MITM.
 DOMAIN-KEYWORD,-ad.a.yximgs.com
 DOMAIN-KEYWORD,-ad.ixigua.com
 DOMAIN-KEYWORD,-ad.sm.cn
@@ -205,6 +206,3 @@ IP-CIDR6,2402:4e00:1200:ed00:0:9089:6dac:96b6/128,no-resolve
 IP-CIDR6,2402:4e00:1900:1700:0:9554:1ad9:c3a/128,no-resolve
 IP-CIDR6,2402:db40:5100:1011::5/128,no-resolve
 IP-CIDR6,240e:928:1400:10::25/128,no-resolve
-URL-REGEX,/\d+/resolve
-URL-REGEX,/\d+/sign_d
-URL-REGEX,/igd\.xml

@@ -1,5 +1,5 @@
 # 规则名称: HBO
-# 规则统计: 43
+# 规则统计: 42
 
 DOMAIN-SUFFIX,bcbolthboa-a.akamaihd.net
 DOMAIN-SUFFIX,cinemax.com
@@ -43,4 +43,3 @@ DOMAIN-SUFFIX,nowe.com
 DOMAIN-SUFFIX,nowe.hk
 DOMAIN-SUFFIX,warnermediacdn.com
 DOMAIN-SUFFIX,youboranqs01.com
-PROCESS-NAME,com.hbo.hbonow

@@ -1,5 +1,5 @@
 # 规则名称: ProxyMedia
-# 规则统计: 335
+# 规则统计: 321
 
 DOMAIN,44wilhpljf.execute-api.ap-southeast-1.amazonaws.com
 DOMAIN,4gtvfreepcvod-cds.cdn.hinet.net
@@ -273,20 +273,6 @@ DOMAIN-KEYWORD,rthklive
 DOMAIN-KEYWORD,tvbanywhere
 DOMAIN-KEYWORD,uk-live
 DOMAIN-KEYWORD,voddazn
-PROCESS-NAME,com.amazon.avod.thirdpartyclient
-PROCESS-NAME,com.bstar.intl
-PROCESS-NAME,com.hktve.viutv
-PROCESS-NAME,com.hulu.plus
-PROCESS-NAME,com.linecorp.linetv
-PROCESS-NAME,com.netflix.mediaclient
-PROCESS-NAME,com.tencent.ibg.joox
-PROCESS-NAME,com.twgood.android
-PROCESS-NAME,com.viu.pad
-PROCESS-NAME,com.viu.phone
-PROCESS-NAME,com.vuclip.viu
-PROCESS-NAME,music
-PROCESS-NAME,tv
-PROCESS-NAME,tv.twitch.android.app
 USER-AGENT,*Spotify*
 USER-AGENT,AbemaTV*
 USER-AGENT,All4*
