@@ -42,7 +42,7 @@ ALLOWED_RULE_TYPES = {
 }
 DIRECT_RULE_TYPES = {"AND", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "IP-CIDR6"}
 REMOTE_RULE_PREFIXES = {
-    "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@9b1432d57c9ea26ef24ea037481189743f1d73f6/Rules/",
+    "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd430/Rules/",
 }
 RUNTIME_RULE_FILES = {
     "Ads_SukkaW_Extra.list",
