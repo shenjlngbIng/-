@@ -36,12 +36,14 @@ ALLOWED_GROUP_OPTIONS = {
     "no-alert",
     "policy-regex-filter",
     "tolerance",
+    "update-interval",
 }
 BUILTIN_POLICIES = {"DIRECT", "REJECT", "REJECT-DROP", "REJECT-NO-DROP"}
 RULE_TRAILING_OPTIONS = {"dns-failed", "extended-matching", "no-resolve"}
 ALLOWED_RULE_TYPES = {
     "DEST-PORT",
     "DOMAIN",
+    "DOMAIN-KEYWORD",
     "DOMAIN-SUFFIX",
     "FINAL",
     "IP-ASN",
@@ -78,21 +80,28 @@ RUNTIME_RULE_FILES = {
     "Twitter.list",
     "YouTube.list",
 }
+APNS_PROXY_RULES = {
+    "DOMAIN-SUFFIX,push.apple.com,Proxy",
+    "DOMAIN-KEYWORD,push-apple.com.akadns.net,Proxy",
+    "DOMAIN-SUFFIX,push-apple.com,Proxy",
+    "DOMAIN-KEYWORD,apple.com.edgekey.net,Proxy",
+    "IP-CIDR,17.249.0.0/16,Proxy,no-resolve",
+    "IP-CIDR,17.252.0.0/16,Proxy,no-resolve",
+    "IP-CIDR,17.57.144.0/22,Proxy,no-resolve",
+    "IP-CIDR,17.188.128.0/18,Proxy,no-resolve",
+    "IP-CIDR,17.188.20.0/23,Proxy,no-resolve",
+    "IP-CIDR6,2620:149:a44::/48,Proxy,no-resolve",
+    "IP-CIDR6,2403:300:a42::/48,Proxy,no-resolve",
+    "IP-CIDR6,2403:300:a51::/48,Proxy,no-resolve",
+    "IP-CIDR6,2a01:b740:a42::/48,Proxy,no-resolve",
+}
+APNS_TARGETS = {rule.split(",")[1].lower() for rule in APNS_PROXY_RULES}
 DIRECT_IP_RULES = {
     ("IP-CIDR", "10.0.0.0/8", "DIRECT"),
     ("IP-CIDR", "127.0.0.0/8", "DIRECT"),
     ("IP-CIDR", "169.254.0.0/16", "DIRECT"),
     ("IP-CIDR", "172.16.0.0/12", "DIRECT"),
     ("IP-CIDR", "192.168.0.0/16", "DIRECT"),
-    ("IP-CIDR", "17.188.20.0/23", "Apple"),
-    ("IP-CIDR", "17.188.128.0/18", "Apple"),
-    ("IP-CIDR", "17.249.0.0/16", "Apple"),
-    ("IP-CIDR", "17.252.0.0/16", "Apple"),
-    ("IP-CIDR", "17.57.144.0/22", "Apple"),
-    ("IP-CIDR6", "2403:300:a42::/48", "Apple"),
-    ("IP-CIDR6", "2403:300:a51::/48", "Apple"),
-    ("IP-CIDR6", "2620:149:a44::/48", "Apple"),
-    ("IP-CIDR6", "2a01:b740:a42::/48", "Apple"),
     ("IP-CIDR6", "::1/128", "DIRECT"),
     ("IP-CIDR6", "fc00::/7", "DIRECT"),
     ("IP-CIDR6", "fe80::/10", "DIRECT"),
@@ -102,11 +111,16 @@ DIRECT_BUILTIN_DOMAIN_RULES = {
     ("DOMAIN", "sub.store"),
     ("DOMAIN-SUFFIX", "local"),
 }
-EXPECTED_DIRECT_DOMAIN_COUNT = 114
-EXPECTED_DIRECT_DOMAIN_SHA256 = "8306c8b702f54a4686d1d1621fdbb84861f03a19c2f0bb7809443493b168f3d7"
+EXPECTED_DIRECT_DOMAIN_COUNT = 110
+EXPECTED_DIRECT_DOMAIN_SHA256 = "85e52c57478017d849caf5ffa51deb7269ba33fa4f972a2b701e9eb4cf94467c"
 EXPECTED_HOSTS = {
     "sub.store": "127.0.0.1",
 }
+SUBSTORE_PLACEHOLDER_COMMENT = (
+    "# 【Sub-Store 转换订阅地址填写处】将下方 policy-path 的占位文字替换为 "
+    "Sub-Store 转换后的订阅链接"
+)
+SUBSTORE_POLICY_PATH_PLACEHOLDER = "此处填入Sub-Store转换后的订阅链接"
 
 
 def split_fields(value: str) -> list[str]:
@@ -141,6 +155,9 @@ def main() -> int:
     def fail(message: str, line: int | None = None) -> None:
         prefix = f"line {line}: " if line else ""
         errors.append(prefix + message)
+
+    if SUBSTORE_PLACEHOLDER_COMMENT not in source_lines:
+        fail("the required Sub-Store policy-path placeholder comment is missing")
 
     for section in sections:
         if section and section not in ALLOWED_SECTIONS:
@@ -198,7 +215,7 @@ def main() -> int:
         "test-timeout": "8",
         "show-error-page-for-reject": "false",
         "always-real-ip": "<simple-hostname>, *.local, *.cmpassport.com, id6.me, open.e.189.cn, mdn.open.wo.cn, opencloud.wostore.cn, auth.wosms.cn, *.10099.com.cn",
-        "always-raw-tcp-hosts": "149.154.*, 91.108.*",
+        "always-raw-tcp-hosts": "149.154.*, 91.108.*, *.push.apple.com:443, *push-apple.com.akadns.net:443, *.apple.com.edgekey.net:443",
     }
     for key, expected in required_general.items():
         item = general.get(key)
@@ -336,8 +353,18 @@ def main() -> int:
         for key in options:
             if key not in ALLOWED_GROUP_OPTIONS and key != "policy-path":
                 fail(f"unapproved policy group option in {name}: {key}", number)
-        if "policy-path" in options:
-            fail(f"runtime external policy subscription is forbidden: {name}", number)
+        policy_path = options.get("policy-path")
+        is_substore_placeholder = (
+            name == "AllServer" and policy_path == SUBSTORE_POLICY_PATH_PLACEHOLDER
+        )
+        if policy_path is not None and not is_substore_placeholder:
+            fail(f"public profile may only contain the audited Sub-Store placeholder: {name}", number)
+        if name == "AllServer" and not is_substore_placeholder:
+            fail("AllServer must retain the Sub-Store policy-path placeholder", number)
+        if "update-interval" in options and (
+            not is_substore_placeholder or options["update-interval"] != "86400"
+        ):
+            fail(f"update-interval is only approved for the AllServer placeholder at 86400: {name}", number)
         includes_all = str(options.get("include-all-proxies", "")).lower() in {"1", "true"}
         if includes_all and name != "AllServer":
             fail(f"only AllServer may dynamically include local proxies: {name}", number)
@@ -440,6 +467,9 @@ def main() -> int:
     remote_files: dict[str, int] = {}
     seen_rules: dict[str, int] = {}
     seen_direct_ip_rules: set[tuple[str, str, str]] = set()
+    seen_apns_proxy_rules: set[str] = set()
+    apns_rule_indices: list[int] = []
+    apple_domain_index = None
     direct_domain_rules: list[str] = []
 
     for index, (number, line) in enumerate(rules):
@@ -480,7 +510,7 @@ def main() -> int:
         rule_type = fields[0].upper() if fields else ""
         if rule_type not in ALLOWED_RULE_TYPES:
             fail(f"unsupported main rule type: {rule_type}", number)
-        if rule_type in {"DOMAIN", "DOMAIN-SUFFIX", "DEST-PORT", "PROTOCOL"} and len(fields) != 3:
+        if rule_type in {"DOMAIN", "DOMAIN-KEYWORD", "DOMAIN-SUFFIX", "DEST-PORT", "PROTOCOL"} and len(fields) != 3:
             fail(f"malformed {rule_type} rule", number)
         if rule_type in {"IP-ASN", "IP-CIDR", "IP-CIDR6"}:
             if len(fields) not in {3, 4} or (len(fields) == 4 and fields[3].lower() != "no-resolve"):
@@ -492,6 +522,19 @@ def main() -> int:
             fail("malformed FINAL rule", number)
         if policy not in groups and policy not in proxy_types and policy not in BUILTIN_POLICIES:
             fail(f"rule uses an undefined policy: {policy}", number)
+
+        target = fields[1].lower() if len(fields) > 1 else ""
+        if target in APNS_TARGETS:
+            if line not in APNS_PROXY_RULES:
+                fail(f"APNs target must use its exact fail-closed Proxy rule: {target}", number)
+            else:
+                seen_apns_proxy_rules.add(line)
+                apns_rule_indices.append(index)
+        if rule_type == "DOMAIN-SUFFIX" and target == "akadns.net":
+            fail("the whole akadns.net suffix is too broad for the APNs workaround", number)
+        if upper == "DOMAIN-SUFFIX,APPLE.COM,APPLE":
+            apple_domain_index = index
+
         direct_rule = reaches_direct(policy) or policy == "DIRECT"
         if direct_rule and first_broad_direct is None:
             first_broad_direct = index
@@ -566,6 +609,13 @@ def main() -> int:
     for required_rule in ("DOMAIN,localhost,DIRECT", "DOMAIN,sub.store,DIRECT"):
         if required_rule not in seen_rules:
             fail(f"required local-only rule is missing: {required_rule}")
+    missing_apns_proxy_rules = sorted(APNS_PROXY_RULES - seen_apns_proxy_rules)
+    if missing_apns_proxy_rules:
+        fail(f"required APNs Proxy rules are missing: {missing_apns_proxy_rules}")
+    if apple_domain_index is None:
+        fail("the audited Apple domain rule is missing")
+    elif apns_rule_indices and max(apns_rule_indices) > apple_domain_index:
+        fail("all APNs Proxy rules must precede the broad Apple domain rule")
     missing_direct_ip_rules = sorted(DIRECT_IP_RULES - seen_direct_ip_rules)
     if missing_direct_ip_rules:
         fail(f"required DIRECT-capable networks are missing: {missing_direct_ip_rules}")
