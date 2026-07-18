@@ -48,12 +48,17 @@ def main() -> int:
         ),
         "Sub-Store placeholder comment removed": replace_once(
             baseline,
-            "# 【Sub-Store 转换订阅地址填写处】将下方 policy-path 的占位文字替换为 Sub-Store 转换后的订阅链接\n",
+            "# 【Sub-Store 转换订阅地址填写处】只替换下方 policy-path 的中文占位文字\n",
+            "",
+        ),
+        "Sub-Store bootstrap instruction removed": replace_once(
+            baseline,
+            "# 零静态节点冷启动：真实链接无“?”时追加 ?proxy=DIRECT；已有“?”时追加 &proxy=DIRECT\n",
             "",
         ),
         "Sub-Store policy-path placeholder removed": replace_once(
             baseline,
-            ", policy-path=此处填入Sub-Store转换后的订阅链接, update-interval=86400",
+            ", policy-path=此处填入Sub-Store转换后的订阅链接, update-interval=0",
             "",
         ),
         "renamed direct policy": replace_once(
@@ -68,8 +73,8 @@ def main() -> int:
         ),
         "APNs direct fallback policy": replace_once(
             baseline,
-            "[Rule]\n",
-            "Apple Push = select, DIRECT\n\n[Rule]\n",
+            "# 运行时规则已内嵌；不再依赖 GitHub、jsDelivr、TLS 或外部规则缓存\n",
+            "Apple Push = select, DIRECT\n\n# 运行时规则已内嵌；不再依赖 GitHub、jsDelivr、TLS 或外部规则缓存\n",
         ),
         "APNs domain direct regression": replace_once(
             baseline,
@@ -153,8 +158,28 @@ def main() -> int:
         ),
         "policy group cycle": replace_once(
             baseline,
-            "[Rule]\n",
-            "Loop A = select, Loop B\nLoop B = select, Loop A\n\n[Rule]\n",
+            "# 运行时规则已内嵌；不再依赖 GitHub、jsDelivr、TLS 或外部规则缓存\n",
+            "Loop A = select, Loop B\nLoop B = select, Loop A\n\n# 运行时规则已内嵌；不再依赖 GitHub、jsDelivr、TLS 或外部规则缓存\n",
+        ),
+        "external runtime ruleset restored": replace_once(
+            baseline,
+            "RULE-SET,RS_ChatGPT,ChatGPT,extended-matching",
+            "RULE-SET,https://example.com/ChatGPT.list,ChatGPT,extended-matching",
+        ),
+        "inline ruleset content changed": replace_once(
+            baseline,
+            "DOMAIN,bahamut.akamaized.net\n",
+            "DOMAIN,changed-invalid.example\n",
+        ),
+        "inline ruleset section renamed": replace_once(
+            baseline,
+            "[Ruleset RS_Bahamut]",
+            "[Ruleset RS_Bahamut_Unknown]",
+        ),
+        "SYSTEM ruleset bypasses Apple choice": replace_once(
+            baseline,
+            "RULE-SET,SYSTEM,Apple",
+            "RULE-SET,SYSTEM,DIRECT",
         ),
     }
 

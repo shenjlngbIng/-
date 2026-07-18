@@ -8,12 +8,10 @@ import ipaddress
 import re
 import sys
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
 
 
 DIRECT_GROUPS_ALLOWED = {"Domestic", "Apple"}
 FORBIDDEN_SPECIAL_POLICIES = {"APNs Direct", "APNs Proxy", "Apple Push"}
-IMMUTABLE_REVISION = re.compile(r"(?:@|/)[0-9a-f]{40}(?:/|$)", re.IGNORECASE)
 ALLOWED_SECTIONS = {"General", "Host", "Proxy", "Proxy Group", "Rule"}
 ALLOWED_PROXY_TYPES = {
     "https",
@@ -53,32 +51,29 @@ ALLOWED_RULE_TYPES = {
     "RULE-SET",
 }
 DIRECT_RULE_TYPES = {"DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "IP-CIDR6"}
-REMOTE_RULE_PREFIXES = {
-    "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd430/Rules/",
-}
-RUNTIME_RULE_FILES = {
-    "Ads_SukkaW_Extra.list",
-    "Bahamut.list",
-    "BiliBiliIntl.list",
-    "ChatGPT.list",
-    "Claude.list",
-    "Disney.list",
-    "Emby.list",
-    "Game.list",
-    "Gemini.list",
-    "Github.list",
-    "Google.list",
-    "HBO.list",
-    "Microsoft.list",
-    "Netflix.list",
-    "OneDrive.list",
-    "PrimeVideo.list",
-    "ProxyMedia.list",
-    "Reject.list",
-    "Spotify.list",
-    "TikTok.list",
-    "Twitter.list",
-    "YouTube.list",
+INLINE_RULESETS = {
+    "RS_Ads_SukkaW_Extra": ("Ads_SukkaW_Extra.list", 206, "a97509c9cd7a9f22e1f5339e35299fee4b66b163b49f5d7fba1e199ad010af49"),
+    "RS_Bahamut": ("Bahamut.list", 5, "2226159701061259c300e849517146eb68da08e9fbe34814ac917b074e564859"),
+    "RS_BiliBiliIntl": ("BiliBiliIntl.list", 1, "40502ce8ef7356d89f3c0ab5f78fce58cbbff115950b70c06900086c1e4c5d9d"),
+    "RS_ChatGPT": ("ChatGPT.list", 34, "960d48ef67348f48fbe7e6ff99e9c91d8595c8cdc378cf445e823d3de93ae436"),
+    "RS_Claude": ("Claude.list", 6, "632c207163dc335818c5e12dc9881a8b890023009e3ca4754b21b45aa0965e73"),
+    "RS_Disney": ("Disney.list", 172, "dd32b132007877b6818cf8475866cfacd5087d510dc0df4d4e3e2a7cda5ae9fe"),
+    "RS_Emby": ("Emby.list", 194, "016b79069e993aa724f589df33595f4ff8d4c2ecf8b24ce05353f9bb1e6b649a"),
+    "RS_Game": ("Game.list", 597, "d355395a460916e44bc1a2f5fddaf755a05411e96e5111118f5687a36e868014"),
+    "RS_Gemini": ("Gemini.list", 16, "a0a611a00413113bf0f0905885c67301992587e6b5707c040fa706268a538236"),
+    "RS_Github": ("Github.list", 6, "9114baf99e67342f62d948cd115715d2c3d513c60915b2ea994c758d38c098f3"),
+    "RS_Google": ("Google.list", 25, "d09387d7d5981a19dc20a045382c423ab97939ac0db53b5e330eda80f86ac78f"),
+    "RS_HBO": ("HBO.list", 42, "3dfaf0f1013b6a2a60ca5320c5beeba8230a43775844d8d2919a8bd796e8369d"),
+    "RS_Microsoft": ("Microsoft.list", 79, "280226408c37c0e103e151af24acb651a6fdd9257e51e17ac7a0be0d83f970db"),
+    "RS_Netflix": ("Netflix.list", 40, "629a080a9edda858d1c18d17ca3ee874ca461ff09e98243e1f92e980f53789c1"),
+    "RS_OneDrive": ("OneDrive.list", 15, "32f28218755b7e45c9278c005b8bcaa817b921bd2420c11ef1d97b8bca4df015"),
+    "RS_PrimeVideo": ("PrimeVideo.list", 15, "31800847ffeaaf7bd1889b4b1917f587aeaa85395c0426f76bcc38b208e9330b"),
+    "RS_ProxyMedia": ("ProxyMedia.list", 321, "4af6caf4869a48522e7993c81922965cfdd585e47467ec332b335209941639b1"),
+    "RS_Reject": ("Reject.list", 6210, "a344f68cc0051dc7581524c86d5ac38fbac5d918b0872b47beca0501f6a90470"),
+    "RS_Spotify": ("Spotify.list", 29, "407613bc81c2d5ab0f4b0c07c6cfde0071ed494723236181c0f3352c70f804de"),
+    "RS_TikTok": ("TikTok.list", 76, "a148ce48d96d8f281e4bcbdeb06f7cd3a368327a7eec832c9ddcea59e0cf4a60"),
+    "RS_Twitter": ("Twitter.list", 12, "242562e9415174cf35616a591f36da5afbfae759be1d10dabf8cb4569101cda2"),
+    "RS_YouTube": ("YouTube.list", 14, "989829f4eb0533df7583af19c1b94aae83748a85cb1ae8b0a733a339bf2e2c7e"),
 }
 APNS_PROXY_RULES = {
     "DOMAIN-SUFFIX,push.apple.com,Proxy",
@@ -116,10 +111,12 @@ EXPECTED_DIRECT_DOMAIN_SHA256 = "85e52c57478017d849caf5ffa51deb7269ba33fa4f972a2
 EXPECTED_HOSTS = {
     "sub.store": "127.0.0.1",
 }
-SUBSTORE_PLACEHOLDER_COMMENT = (
-    "# 【Sub-Store 转换订阅地址填写处】将下方 policy-path 的占位文字替换为 "
-    "Sub-Store 转换后的订阅链接"
-)
+SUBSTORE_REQUIRED_COMMENTS = {
+    "# 【Sub-Store 转换订阅地址填写处】只替换下方 policy-path 的中文占位文字",
+    "# 零静态节点冷启动：真实链接无“?”时追加 ?proxy=DIRECT；已有“?”时追加 &proxy=DIRECT",
+    "# 上述 DIRECT 仅是明确的订阅控制面启动例外；普通境外、未知和失败流量仍不回落直连",
+    "# 更严格模式：先在私有 [Proxy] 加入已审核启动节点，再把 DIRECT 改成该节点或策略名",
+}
 SUBSTORE_POLICY_PATH_PLACEHOLDER = "此处填入Sub-Store转换后的订阅链接"
 
 
@@ -139,6 +136,7 @@ def main() -> int:
         print(f"ERROR: cannot read profile: {exc}", file=sys.stderr)
         return 2
     sections: dict[str, list[tuple[int, str]]] = {}
+    duplicate_sections: list[tuple[int, str]] = []
     current = ""
     for number, raw in enumerate(source_lines, 1):
         line = raw.strip()
@@ -146,6 +144,8 @@ def main() -> int:
             continue
         if line.startswith("[") and line.endswith("]"):
             current = line[1:-1].strip()
+            if current in sections:
+                duplicate_sections.append((number, current))
             sections.setdefault(current, [])
             continue
         sections.setdefault(current, []).append((number, line))
@@ -156,14 +156,36 @@ def main() -> int:
         prefix = f"line {line}: " if line else ""
         errors.append(prefix + message)
 
-    if SUBSTORE_PLACEHOLDER_COMMENT not in source_lines:
-        fail("the required Sub-Store policy-path placeholder comment is missing")
+    for comment in sorted(SUBSTORE_REQUIRED_COMMENTS):
+        if comment not in source_lines:
+            fail(f"required Sub-Store bootstrap comment is missing: {comment}")
 
     for section in sections:
-        if section and section not in ALLOWED_SECTIONS:
+        inline_name = section.removeprefix("Ruleset ")
+        is_inline = section.startswith("Ruleset ") and inline_name in INLINE_RULESETS
+        if section and section not in ALLOWED_SECTIONS and not is_inline:
             fail(f"forbidden or unparsed section: [{section}]")
+    for number, section in duplicate_sections:
+        fail(f"duplicate section: [{section}]", number)
     for number, _ in sections.get("", []):
         fail("active content before the first section is forbidden", number)
+
+    inline_entry_total = 0
+    for name, (filename, expected_count, expected_digest) in INLINE_RULESETS.items():
+        section_name = f"Ruleset {name}"
+        entries = sections.get(section_name)
+        if entries is None:
+            fail(f"required inline ruleset is missing: [{section_name}]")
+            continue
+        lines = [line for _, line in entries]
+        inline_entry_total += len(lines)
+        payload = ("\n".join(lines) + "\n").encode("utf-8")
+        actual_digest = hashlib.sha256(payload).hexdigest()
+        if len(lines) != expected_count or actual_digest != expected_digest:
+            fail(
+                f"inline ruleset {name} no longer matches Rules/{filename}: "
+                f"count={len(lines)} sha256={actual_digest}"
+            )
 
     for number, raw in enumerate(source_lines, 1):
         directive = raw.strip().lower()
@@ -362,9 +384,9 @@ def main() -> int:
         if name == "AllServer" and not is_substore_placeholder:
             fail("AllServer must retain the Sub-Store policy-path placeholder", number)
         if "update-interval" in options and (
-            not is_substore_placeholder or options["update-interval"] != "86400"
+            not is_substore_placeholder or options["update-interval"] != "0"
         ):
-            fail(f"update-interval is only approved for the AllServer placeholder at 86400: {name}", number)
+            fail(f"update-interval is only approved for the AllServer placeholder at 0: {name}", number)
         includes_all = str(options.get("include-all-proxies", "")).lower() in {"1", "true"}
         if includes_all and name != "AllServer":
             fail(f"only AllServer may dynamically include local proxies: {name}", number)
@@ -463,13 +485,14 @@ def main() -> int:
     stun_index = doh_index = quic_index = udp_index = dns53_index = None
     first_broad_direct = None
     final_entries: list[tuple[int, str]] = []
-    remote_count = 0
-    remote_files: dict[str, int] = {}
+    external_rule_count = 0
+    inline_references: dict[str, int] = {}
     seen_rules: dict[str, int] = {}
     seen_direct_ip_rules: set[tuple[str, str, str]] = set()
     seen_apns_proxy_rules: set[str] = set()
     apns_rule_indices: list[int] = []
     apple_domain_index = None
+    system_ruleset_index = None
     direct_domain_rules: list[str] = []
 
     for index, (number, line) in enumerate(rules):
@@ -518,6 +541,26 @@ def main() -> int:
         if rule_type == "RULE-SET":
             if len(fields) < 3 or any(option.lower() not in {"extended-matching", "no-resolve"} for option in fields[3:]):
                 fail("malformed RULE-SET parameters", number)
+            if len(fields) >= 2:
+                source = fields[1]
+                if source.startswith(("http://", "https://")):
+                    external_rule_count += 1
+                    fail(f"external runtime rules are forbidden; embed the audited snapshot: {source}", number)
+                elif source in {"SYSTEM", "LAN"}:
+                    if line != "RULE-SET,SYSTEM,Apple":
+                        fail(f"unapproved built-in ruleset binding: {line}", number)
+                    else:
+                        system_ruleset_index = index
+                elif source not in INLINE_RULESETS:
+                    fail(f"undefined inline ruleset: {source}", number)
+                elif source in inline_references:
+                    fail(
+                        f"duplicate inline ruleset reference: {source} "
+                        f"(first referenced at line {inline_references[source]})",
+                        number,
+                    )
+                else:
+                    inline_references[source] = number
         if rule_type == "FINAL" and len(fields) not in {2, 3}:
             fail("malformed FINAL rule", number)
         if policy not in groups and policy not in proxy_types and policy not in BUILTIN_POLICIES:
@@ -538,7 +581,10 @@ def main() -> int:
         direct_rule = reaches_direct(policy) or policy == "DIRECT"
         if direct_rule and first_broad_direct is None:
             first_broad_direct = index
-        if direct_rule and rule_type not in DIRECT_RULE_TYPES:
+        approved_system_binding = line == "RULE-SET,SYSTEM,Apple"
+        if direct_rule and rule_type == "RULE-SET" and not approved_system_binding:
+            fail("only the built-in SYSTEM ruleset may feed the DIRECT-capable Apple group", number)
+        elif direct_rule and rule_type not in DIRECT_RULE_TYPES and not approved_system_binding:
             fail(f"rule type may not grant DIRECT: {rule_type}", number)
         if direct_rule and rule_type in {"IP-CIDR", "IP-CIDR6"}:
             target = fields[1] if len(fields) > 1 else ""
@@ -556,30 +602,6 @@ def main() -> int:
             target = fields[1].lower() if len(fields) > 1 else ""
             if "." not in target and target != "local":
                 fail(f"top-level suffix may not grant DIRECT: {target}", number)
-
-        if len(fields) >= 2 and fields[0].upper() in {"RULE-SET", "DOMAIN-SET"} and fields[1].startswith(("http://", "https://")):
-            remote_count += 1
-            url = fields[1]
-            parsed_url = urlsplit(url)
-            filename = Path(unquote(parsed_url.path)).name
-            if parsed_url.query or parsed_url.fragment:
-                fail(f"remote rule URL must not contain a query or fragment: {url}", number)
-            if filename in remote_files:
-                fail(
-                    f"duplicate remote rule file: {filename} "
-                    f"(first referenced at line {remote_files[filename]})",
-                    number,
-                )
-            else:
-                remote_files[filename] = number
-            if not url.startswith("https://"):
-                fail(f"remote rule must use HTTPS: {url}", number)
-            if not any(url.startswith(prefix) for prefix in REMOTE_RULE_PREFIXES):
-                fail(f"remote rule source is not allowlisted: {url}", number)
-            if "/master/" in url or "/main/" in url or not IMMUTABLE_REVISION.search(url):
-                fail(f"remote rule is not pinned to a full commit: {url}", number)
-            if direct_rule:
-                fail("remote rules may not feed a DIRECT-capable policy", number)
 
     if doh_index is None or [line.upper() for _, line in rules[doh_index : doh_index + 3]] != [
         "PROTOCOL,DOH,PROXY",
@@ -604,8 +626,8 @@ def main() -> int:
         fail("profile must have exactly one FINAL,Final,dns-failed rule")
     if rules and final_entries and final_entries[0][0] != rules[-1][0]:
         fail("FINAL must be the last active rule", final_entries[0][0])
-    if remote_count != 22:
-        fail(f"expected 22 immutable remote rules, found {remote_count}")
+    if external_rule_count:
+        fail(f"expected no external runtime rules, found {external_rule_count}")
     for required_rule in ("DOMAIN,localhost,DIRECT", "DOMAIN,sub.store,DIRECT"):
         if required_rule not in seen_rules:
             fail(f"required local-only rule is missing: {required_rule}")
@@ -616,6 +638,10 @@ def main() -> int:
         fail("the audited Apple domain rule is missing")
     elif apns_rule_indices and max(apns_rule_indices) > apple_domain_index:
         fail("all APNs Proxy rules must precede the broad Apple domain rule")
+    if system_ruleset_index is None:
+        fail("the built-in RULE-SET,SYSTEM,Apple binding is missing")
+    elif apns_rule_indices and max(apns_rule_indices) > system_ruleset_index:
+        fail("all APNs Proxy rules must precede RULE-SET,SYSTEM,Apple")
     missing_direct_ip_rules = sorted(DIRECT_IP_RULES - seen_direct_ip_rules)
     if missing_direct_ip_rules:
         fail(f"required DIRECT-capable networks are missing: {missing_direct_ip_rules}")
@@ -629,12 +655,12 @@ def main() -> int:
             "DIRECT-capable domain allowlist changed: "
             f"count={len(direct_domain_rules)} sha256={direct_domain_digest}"
         )
-    missing_remote_files = sorted(RUNTIME_RULE_FILES - remote_files.keys())
-    unexpected_remote_files = sorted(remote_files.keys() - RUNTIME_RULE_FILES)
-    if missing_remote_files:
-        fail(f"required runtime rule files are missing: {', '.join(missing_remote_files)}")
-    if unexpected_remote_files:
-        fail(f"unapproved runtime rule files are present: {', '.join(unexpected_remote_files)}")
+    missing_inline_rulesets = sorted(INLINE_RULESETS.keys() - inline_references.keys())
+    unexpected_inline_rulesets = sorted(inline_references.keys() - INLINE_RULESETS.keys())
+    if missing_inline_rulesets:
+        fail(f"required inline rulesets are not referenced: {', '.join(missing_inline_rulesets)}")
+    if unexpected_inline_rulesets:
+        fail(f"unapproved inline rulesets are referenced: {', '.join(unexpected_inline_rulesets)}")
 
     if errors:
         for error in errors:
@@ -644,7 +670,9 @@ def main() -> int:
 
     print(
         f"PASS: {profile} | groups={len(groups)} rules={len(rules)} "
-        f"remote_rules={remote_count} direct_groups={','.join(sorted(DIRECT_GROUPS_ALLOWED))}"
+        f"inline_rulesets={len(inline_references)} inline_entries={inline_entry_total} "
+        f"external_rules={external_rule_count} "
+        f"direct_groups={','.join(sorted(DIRECT_GROUPS_ALLOWED))}"
     )
     return 0
 

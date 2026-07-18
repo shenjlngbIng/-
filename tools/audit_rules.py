@@ -9,9 +9,6 @@ import ipaddress
 import re
 import sys
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
-
-
 TWO_FIELD_TYPES = {
     "DOMAIN",
     "DOMAIN-KEYWORD",
@@ -48,6 +45,30 @@ RUNTIME_RULE_SHA256 = {
     "TikTok.list": "d603c3280c450d47425306a716b749b8de7d04bcb07cfd71b5fccb549f7a133d",
     "Twitter.list": "25dbb426cbdac693b923aeac2e482cb2ae44310bd90c29fc2d2ce92e2a22854d",
     "YouTube.list": "108b9fbf7e67aaad48b4dd8c1f05b999d37c0bea8e1a6f288b6dd9c514b8f4af",
+}
+INLINE_RULESET_FILES = {
+    "RS_Ads_SukkaW_Extra": "Ads_SukkaW_Extra.list",
+    "RS_Bahamut": "Bahamut.list",
+    "RS_BiliBiliIntl": "BiliBiliIntl.list",
+    "RS_ChatGPT": "ChatGPT.list",
+    "RS_Claude": "Claude.list",
+    "RS_Disney": "Disney.list",
+    "RS_Emby": "Emby.list",
+    "RS_Game": "Game.list",
+    "RS_Gemini": "Gemini.list",
+    "RS_Github": "Github.list",
+    "RS_Google": "Google.list",
+    "RS_HBO": "HBO.list",
+    "RS_Microsoft": "Microsoft.list",
+    "RS_Netflix": "Netflix.list",
+    "RS_OneDrive": "OneDrive.list",
+    "RS_PrimeVideo": "PrimeVideo.list",
+    "RS_ProxyMedia": "ProxyMedia.list",
+    "RS_Reject": "Reject.list",
+    "RS_Spotify": "Spotify.list",
+    "RS_TikTok": "TikTok.list",
+    "RS_Twitter": "Twitter.list",
+    "RS_YouTube": "YouTube.list",
 }
 
 
@@ -90,10 +111,14 @@ def profile_rule_files(profile: Path, errors: list[str]) -> set[str]:
         if not fields or fields[0].upper() != "RULE-SET" or len(fields) < 2:
             continue
         source = fields[1]
-        path = unquote(urlsplit(source).path) if "://" in source else source
-        filename = Path(path).name
-        if not filename.endswith(".list"):
-            errors.append(f"{profile}:{number}: RULE-SET does not name a .list file: {source}")
+        if source in {"SYSTEM", "LAN"}:
+            continue
+        if source.startswith(("http://", "https://")):
+            errors.append(f"{profile}:{number}: external runtime RULE-SET is forbidden: {source}")
+            continue
+        filename = INLINE_RULESET_FILES.get(source, "")
+        if not filename:
+            errors.append(f"{profile}:{number}: undefined inline RULE-SET: {source}")
             continue
         if filename in referenced:
             errors.append(
