@@ -11,7 +11,7 @@
 - 联系方式：[@shenjlngbIng](https://t.me/shenjlngbIng)
 - GitHub：<https://github.com/shenjlngbIng/->
 - 主配置：`Surge.conf`
-- 主要文档：`README.md`、`NOTICE.md`
+- 主要文档：`README.md`、`NOTICE.md`、`CHANGELOG.md`
 - 目标平台：Surge iOS
 
 本项目在公开配置基础上进行了大幅重组与安全加固，包括策略闭环、规则顺序、DNS/DoH、IPv4/IPv6、UDP/QUIC/STUN、APNs 强制代理边界、控制面收缩、节点启动约束、规则快照内嵌、只读候选包验证及静态检查。
@@ -22,9 +22,9 @@
 
 本 NOTICE 不代替 `README.md` 的完整安全说明。与第三方内容和数据处理直接相关的当前边界如下：
 
-- 只有经审核并内联的国内、Apple 和非互联网局域网目标可以到达直连。
+- 只有经审核并内联的国内、Apple、非互联网局域网、四条精确 mDNS/SSDP 发现地址，以及记录在配置中的启动控制面目标可以到达直连。
 - APNs 不使用直连回退或专用 DNS；已审核域名和官方网段固定进入 `Proxy`，不受 `Apple` 的直连选择影响。
-- 境外、未知、普通加密 DNS、STUN、QUIC 和所有其他 UDP 不因故障回落直连。
+- 除精确 `223.5.5.5` DoH 冷启动外的加密 DNS，以及未先命中已审核服务、国内或局域网规则的 STUN、QUIC 和 UDP，不因故障回落直连。
 - 22 个运行时规则集已内嵌到主配置，只能选择代理或拒绝策略，不能扩大直连集合。
 - 主配置没有外部规则 URL；GitHub 与 jsDelivr 不再处于设备规则启动链。
 - 公开主配置只有不可用的节点订阅文字占位值，不包含真实 URL；未替换时外部策略更新失败。主配置不执行第三方脚本，不启用 MITM 或 URL Rewrite；设备另装模块属于必须单独审核的边界。
@@ -75,7 +75,7 @@
 | 类别 | 含义 | 当前例子 |
 | --- | --- | --- |
 | 本项目原创或重写 | 配置闭环、审计脚本、ZIP 暂存器、文档及维护逻辑 | `Surge.conf` 的当前安全架构、`tools/`、文档 |
-| 明确分发或改编的第三方内容 | 已确认存在直接来源或衍生关系 | SukkaW 广告规则、blackmatrix7 HTTPDNS 快照、Coldvvater 快照 |
+| 明确分发或改编的第三方内容 | 已确认存在直接来源或衍生关系 | SukkaW 广告规则、blackmatrix7 HTTPDNS 与服务规则快照、Coldvvater 快照 |
 | 来源尚未逐文件补齐的自托管快照 | 本仓库分发，但不能宣称全部原创或单一来源 | 多个 `Rules/*.list` 文件 |
 | 仅供比较与设计参考 | 用于审计规则组织或语法思路，不代表当前文件直接复制 | DivineEngine、GeQ1an、NobyDa、Rabbit-Spec、As-Lucky |
 
@@ -104,9 +104,9 @@ https://cdn.jsdelivr.net/gh/Coldvvater/Mononoke@e8bee09b64c2f6baaa3056ed8de61c74
 - 规则生成项目：<https://github.com/SukkaLab/ruleset.skk.moe>
 - 规则服务：<https://ruleset.skk.moe/>
 - 上游许可：除上游特别注明的 `List/ip/china_ip.conf` 外，SukkaW/Surge 仓库声明为 AGPL-3.0；特例文件以其单独声明为准。
-- 本项目文件：`Rules/Ads_SukkaW_Domain.list`、`Rules/Ads_SukkaW_Extra.list`
+- 本项目文件：`Rules/Ads_SukkaW_Domain.list`、`Rules/Ads_Custom_Extra.list`
 
-`Ads_SukkaW_Domain.list` 的文件头保留 SukkaW 来源、生成信息和聚合上游说明。`Ads_SukkaW_Extra.list` 的文件头说明其从 SukkaW 广告规则中的非域名规则处理得到，当前以固定快照内嵌到主配置并绑定 `AdBlock`。
+`Ads_SukkaW_Domain.list` 的文件头保留 SukkaW 来源、生成信息和聚合上游说明。`Ads_Custom_Extra.list` 是从历史广告输入和本项目移动端补充整理出的自定义非域名集合，不是 SukkaW 官方 `reject_extra` 全量规则；它以固定快照内嵌到主配置并绑定 `AdBlock`。
 
 本项目对相关内容进行过格式筛选、拆分、去重或适配 Surge `RULE-SET` 的处理。本轮 Surge iOS 候选快照还删除了 3 条宽泛 `URL-REGEX`：当前配置不启用 MITM，路径级 HTTPS 匹配不能作为可靠边界。继续公开分发或修改时，应核对并履行 AGPL-3.0 的许可证保留、修改说明、对应源代码提供及其他适用义务。
 
@@ -118,9 +118,10 @@ AGPL-3.0 副本：`THIRD_PARTY_LICENSES/SukkaW-AGPL-3.0.txt`
 
 - 项目：<https://github.com/blackmatrix7/ios_rule_script>
 - 上游许可：GNU GPL v2，仍应以上游具体目录和文件的声明为准。
-- 本项目关系：`Surge.conf` 内联了 `BlockHttpDNS.list` 的固定快照。
-- 固定提交：`cdd1e3a0ae2834d3f79715d05931ac4936e22592`
-- 内联有效规则：63 条
+- 本项目关系：`Surge.conf` 内联了 `BlockHttpDNS.list`，19 个服务规则文件另与 blackmatrix7 的 Surge 产物合并。
+- HTTPDNS 固定提交：`cdd1e3a0ae2834d3f79715d05931ac4936e22592`
+- 服务规则固定提交：`c00517ce10760a93728b241923a451dfa617be80`
+- HTTPDNS 内联有效规则：63 条
 
 原始文件：
 
@@ -129,6 +130,8 @@ https://github.com/blackmatrix7/ios_rule_script/blob/cdd1e3a0ae2834d3f79715d0593
 ```
 
 本项目将该快照从外部规则改为主配置内联，并为 IP 规则保留或补充适用的 `no-resolve` 参数，以避免运行时远程变化并确保 HTTPDNS 阻断先于直连规则。
+
+19 个服务文件的直接路径、Git blob、SHA-256、排除项和固定提交集中记录在 `Rules/upstreams.lock.json`。生成后的文件头继续保存上游声明的 `NAME`、`AUTHOR` 和 `REPO`；例如 Emby 产物保留其声明的 `justdoiting/emby-rules` 直接来源。本项目把这些固定上游与既有本地规则精确去重，过滤 Surge iOS 不执行的 `PROCESS-NAME`、未单独审核的新增 `IP-ASN`，并排除 24 条会把共享分析、身份、同意管理或公共云平台错误绑定到单一服务策略的规则。合并后的快照仍受上游 GPL v2 及文件内可能列出的更直接来源约束。
 
 复制、修改或再分发相关部分时应保留作者、来源、固定提交和修改说明，并履行 GPL v2 的适用条件。
 
@@ -152,7 +155,7 @@ GPL v2 副本：`THIRD_PARTY_LICENSES/blackmatrix7-GPL-2.0.txt`
 
 ### 6.1 内嵌方式
 
-主配置当前不通过网络加载规则。经审核的 22 个 `Rules/*.list` 文件由 `tools/embed_runtime_rules.py` 生成 `[Ruleset RS_*]` 段，并直接写入 `Surge.conf`。历史固定提交为：
+主配置当前不通过网络加载规则。经审核的 22 个 `Rules/*.list` 文件由 `tools/embed_runtime_rules.py` 确定性生成 `[Ruleset RS_*]` 段，并直接写入 `Surge.conf`。服务规则上游由 `Rules/upstreams.lock.json` 固定；本仓库早期本地快照基线提交为：
 
 ```text
 8099f3036f0f1ebde038abff98cbaec9409cd430
@@ -164,7 +167,7 @@ GPL v2 副本：`THIRD_PARTY_LICENSES/blackmatrix7-GPL-2.0.txt`
 
 | 类别 | 文件 |
 | --- | --- |
-| 广告/拒绝 | `Ads_SukkaW_Extra.list`、`Reject.list` |
+| 广告/拒绝 | `Ads_Custom_Extra.list`、`Reject.list` |
 | AI | `ChatGPT.list`、`Claude.list`、`Gemini.list` |
 | 开发与平台 | `Github.list`、`Google.list`、`Microsoft.list`、`OneDrive.list` |
 | 流媒体 | `Bahamut.list`、`BiliBiliIntl.list`、`Disney.list`、`Emby.list`、`HBO.list`、`Netflix.list`、`PrimeVideo.list`、`ProxyMedia.list`、`Spotify.list`、`TikTok.list`、`YouTube.list` |
@@ -175,17 +178,19 @@ GPL v2 副本：`THIRD_PARTY_LICENSES/blackmatrix7-GPL-2.0.txt`
 
 ### 6.3 Surge iOS 本地修改与能力过滤
 
-当前 22 个内嵌源文件共有 8115 条有效项；完整 `Rules/` 目录共有 32 个文件、132575 条有效项。本轮本地修改包括：
+当前 22 个内嵌源文件共有 10796 条有效项；完整 `Rules/` 目录共有 32 个 `.list` 文件、135256 条有效项。本轮本地修改包括：
 
-- 从 6 个活动文件删除 21 条 `PROCESS-NAME`。其中包含 macOS 可执行文件名和 Android 包名；Surge iOS 会忽略该规则类型。
-- 从 `Ads_SukkaW_Extra.list` 删除 3 条宽泛 `URL-REGEX`。本配置没有 MITM，不把 URL 路径匹配视为可靠的移动端过滤边界。
-- 保留 50 条 `USER-AGENT` 规则，但将其视为尽力匹配。iOS 15 以后，无 MITM 的 HTTPS 请求通常不可见真实 User-Agent；这些规则不能承担防泄漏、最终分流或失败关闭职责。
+- 从本轮 19 个固定上游文件过滤 17 条 `PROCESS-NAME`。其中包含 macOS 可执行文件名和 Android 包名；Surge iOS 不执行该规则类型。
+- 不导入 1 条未经单独审核的新增 `IP-ASN`；既有 2 条本地 ASN 规则继续保留并强制 `no-resolve`。
+- 从 `Ads_Custom_Extra.list` 删除 3 条宽泛 `URL-REGEX`。本配置没有 MITM，不把 URL 路径匹配视为可靠的移动端过滤边界。
+- 排除 24 条非唯一归属的共享分析、身份、同意管理或公共云平台规则，避免手动切换单一服务地区时劫持无关应用。
+- 保留 72 条 `USER-AGENT` 规则，但将其视为尽力匹配。iOS 15 以后，无 MITM 的 HTTPS 请求通常不可见真实 User-Agent；这些规则不能承担防泄漏、最终分流或失败关闭职责。
 - 要求活动文件中的 `IP-ASN`、`IP-CIDR` 和 `IP-CIDR6` 全部带 `no-resolve`，避免匹配 IP 规则时意外触发本地 DNS。
 - 校验每个带 `# 规则统计:` 头的文件，其声明数量必须与实际有效项一致。
 
 这些属于平台适配和本地删改，不改变上游权利归属，也不把删改后的文件变成本项目独立原创。
 
-本轮已按两阶段流程完成候选规则核对。提交 `8099f3036f0f1ebde038abff98cbaec9409cd430` 中的 22 个规则文件与当前内嵌源一致；`tools/audit_rules.py` 固定检查源文件 SHA-256，`tools/audit_config.py` 另行固定检查每个内嵌段的名称、数量和标准化 SHA-256。后续内容变化必须先审核、重新生成主配置并显式更新两处哈希清单。
+本轮已按两阶段流程完成候选规则核对。`tools/update_service_rules.py` 会验证锁文件中的上游 Git blob 与 SHA-256，再执行过滤、去重和排序；`tools/audit_rules.py` 固定检查提交后源文件 SHA-256，`tools/audit_config.py` 另行固定检查每个内嵌段的名称、数量和标准化 SHA-256。`tools/embed_runtime_rules.py --check` 还会拒绝生成结果漂移。后续内容变化必须先审核、重新生成主配置并显式更新两处哈希清单。
 
 ### 6.4 当前未启用的 10 个快照
 
@@ -334,7 +339,7 @@ Sub-Store 官方项目：<https://github.com/sub-store-org/Sub-Store>
 
 工作流执行仍会把候选文件交给 GitHub Actions 运行环境和 artifact 服务处理。候选包不得包含私人节点、凭据或其他秘密。
 
-`.github/workflows/audit.yml` 在 push、pull request 和手动触发时审计当前主配置与规则，使用只读仓库权限和固定提交的 checkout action。该工作流只验证公开静态模板，不接触私人节点。
+`.github/workflows/audit.yml` 在 push、pull request 和手动触发时审计当前主配置与规则，并检查内嵌生成结果没有漂移；它使用只读仓库权限和固定提交的 checkout action。该工作流只验证公开静态模板，不接触私人节点。
 
 ## 10. 隐私与数据暴露
 
@@ -345,7 +350,8 @@ Sub-Store 官方项目：<https://github.com/sub-store-org/Sub-Store>
 | 国内直连目标 | 用户公网 IP、连接时间、目标请求元数据 | 用户真实出口 |
 | Apple 直连目标 | 用户公网 IP、连接时间、服务请求元数据 | 用户真实出口 |
 | APNs 目标 | 推送服务器地址、连接时间、流量大小等元数据 | 代理出口 |
-| 普通 DoH 服务 | DNS 查询、时间和代理连接元数据 | 代理出口 |
+| 配置指定的 `223.5.5.5` DoH | DNS 查询、时间和源 IP | 用户真实出口 |
+| 其他 DoH 服务 | DNS 查询、时间和代理连接元数据 | 代理出口 |
 | 传统 DNS 连通性检查目标 | 探测时间、源 IP 和基础 DNS 元数据 | 用户真实出口或平台实际控制路径 |
 | 代理服务商 | 目标地址、时间、流量大小等连接元数据；加密内容可见性取决于协议 | 用户真实入口 |
 | 最终网站或应用服务 | 代理流量看到代理出口；直连流量看到真实出口 | 取决于策略 |
@@ -356,8 +362,9 @@ Sub-Store 官方项目：<https://github.com/sub-store-org/Sub-Store>
 
 ### 10.1 DNS 隐私边界
 
-- 普通 DNS 采用 HTTPS 加密传输，但解析服务商仍能看到查询内容。
-- 普通 DoH 被规则强制经代理，因此本地运营商通常看到代理连接而不是普通查询内容；代理和 DoH 服务仍各自看到相应元数据。
+- 业务 DNS 采用 HTTPS 加密传输，但解析服务商仍能看到查询内容。
+- 只有同时匹配 `PROTOCOL,DOH` 和 `DOMAIN,223.5.5.5` 的配置内置 DoH 冷启动请求直连；运营商可以观察其目标地址和连接元数据，DoH 服务可以看到查询及真实出口 IP。
+- 其他 DoH 被规则强制经代理，因此本地运营商通常看到代理连接而不是普通查询内容；代理和 DoH 服务仍各自看到相应元数据。
 - `dns-server = 223.5.5.5` 用于 Surge 连通性检查，不是普通 DoH 失败回退；检查本身仍可能形成直连可观察元数据。
 - 53 端口劫持、已知公共 DNS 阻断和 HTTPDNS 快照不能识别所有伪装成普通 HTTPS 的自定义解析协议。
 
@@ -367,7 +374,8 @@ Sub-Store 官方项目：<https://github.com/sub-store-org/Sub-Store>
 
 - `Domestic` 选择 `DIRECT`。
 - `Apple` 选择 `DIRECT`。
-- 局域网、回环、链路本地、ULA 和 `skip-proxy` 明确目标。
+- 配置指定的 `223.5.5.5` DoH 冷启动请求，以及 Sub-Store 显式 `proxy=DIRECT` 请求。
+- 局域网、回环、链路本地、ULA、精确 mDNS/SSDP 和 `skip-proxy` 明确目标。
 - 平台没有交给 Surge 接管的流量。
 
 境外或未知目标出现真实公网 IP 不属于预期行为，应立即停用配置并检查出站模式、模块、其他网络扩展、规则命中、代理故障行为和系统日志。
