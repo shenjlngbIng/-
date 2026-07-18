@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import ipaddress
 import re
 import sys
@@ -24,6 +25,30 @@ BANNED_IOS_TYPES = {
     "URL-REGEX": "URL matching is excluded from this no-MITM mobile profile",
 }
 COUNT_HEADER = re.compile(r"^#\s*规则统计:\s*(\d+)\s*$")
+RUNTIME_RULE_SHA256 = {
+    "Ads_SukkaW_Extra.list": "cc79ab9cfe9568d57e1cb5e82fa07d97bb1d63848f1306b3218793b3e4efbe54",
+    "Bahamut.list": "942bd738059e3cc3c704c68ed33747ca3d9b47bbdfe6b8e48004ef5922ba0faa",
+    "BiliBiliIntl.list": "f828929ab25420b2ca5a48b7c719180ad60dabbd009bfc6d2492a23352526da3",
+    "ChatGPT.list": "cd3827bd04cad45fce41cf7357aceebe6271be8a0d5fc3fb8afd8d2907ce379c",
+    "Claude.list": "8c50b676748732d050c9bccb1a097e506069297b1e1a6db50a5580fe1936e96d",
+    "Disney.list": "77be9cc566532b3256872da35799d3d5c241c88e314feb9be189474e5229d8af",
+    "Emby.list": "656a6671dbdcb638437863124a5daf0f97cdc4b0847731cf5e20a289f9c74574",
+    "Game.list": "ac2a156bb418c8f60a31fc5536f64500fce3770678b627a5aaf5033458ab6332",
+    "Gemini.list": "ad52924bb2d6589593562f14c71ec14e7584fccd1291abc9e0dfab04770350c9",
+    "Github.list": "3469095e1f97fb2bbca099bb9d970f98fc3af4f4031c241406a4e208c3e4c1ab",
+    "Google.list": "f8cd468437e9b9634690480e67ab262fe73041cfb57a80a4f8572d86ffaf6423",
+    "HBO.list": "e2c0b9299a4417da6855267c4d7e109ac72cc8d28276b26df36a294c9427f477",
+    "Microsoft.list": "96343c40e2e90277e15efa3addb4b68b45433d5c9f347a4cf1369d7d1e735097",
+    "Netflix.list": "439c30919659892fce2c85ede131b439cfeda361cd72b957c87280fdd6b1cf48",
+    "OneDrive.list": "6821034ed10773d68ea3ab824907ad7fa9eabddbf44cb6fd00a1504d73fc7e02",
+    "PrimeVideo.list": "6c51280ae050698a50e82ea60eee530f69623a3848fcc848aee07041a3add6aa",
+    "ProxyMedia.list": "6d99612bb86179253258fcdd90ed337ac1159e4564136464f918f615323676c5",
+    "Reject.list": "7ded2b5e007442ebfd969b299e7a51f8a312ed05947eb28f5d88535462681ea3",
+    "Spotify.list": "531c3d202569c567ed82b4872098a1b93fbb6c2010d57c531d719fa5aa1e2045",
+    "TikTok.list": "d603c3280c450d47425306a716b749b8de7d04bcb07cfd71b5fccb549f7a133d",
+    "Twitter.list": "25dbb426cbdac693b923aeac2e482cb2ae44310bd90c29fc2d2ce92e2a22854d",
+    "YouTube.list": "108b9fbf7e67aaad48b4dd8c1f05b999d37c0bea8e1a6f288b6dd9c514b8f4af",
+}
 
 
 def active_lines(path: Path) -> list[tuple[int, str]]:
@@ -116,9 +141,15 @@ def main() -> int:
         errors.append("no .list files found")
     for filename in sorted(runtime_files - paths_by_name.keys()):
         errors.append(f"runtime RULE-SET file is missing: {filename}")
+    if args.profile:
+        for filename in sorted(runtime_files - RUNTIME_RULE_SHA256.keys()):
+            errors.append(f"runtime RULE-SET has no pinned digest: {filename}")
+        for filename in sorted(RUNTIME_RULE_SHA256.keys() - runtime_files):
+            errors.append(f"pinned runtime RULE-SET is not referenced: {filename}")
 
     for path in files:
         try:
+            payload = path.read_bytes()
             lines = active_lines(path)
             expected_count = declared_count(path)
         except (OSError, UnicodeError) as exc:
@@ -129,6 +160,12 @@ def main() -> int:
         is_runtime = path.name in runtime_files
         if is_runtime:
             runtime_rules += len(lines)
+            expected_digest = RUNTIME_RULE_SHA256.get(path.name)
+            actual_digest = hashlib.sha256(payload).hexdigest()
+            if expected_digest is not None and actual_digest != expected_digest:
+                errors.append(
+                    f"{path}: pinned digest mismatch: expected {expected_digest}, got {actual_digest}"
+                )
         if expected_count is not None and expected_count != len(lines):
             errors.append(
                 f"{path}: declared count is {expected_count}, actual active entries are {len(lines)}"

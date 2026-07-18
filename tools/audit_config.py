@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import ipaddress
 import re
 import sys
@@ -10,10 +11,22 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 
-DIRECT_GROUPS_ALLOWED = {"Domestic", "Apple", "Apple Push"}
+DIRECT_GROUPS_ALLOWED = {"Domestic", "Apple"}
+FORBIDDEN_SPECIAL_POLICIES = {"APNs Direct", "APNs Proxy", "Apple Push"}
 IMMUTABLE_REVISION = re.compile(r"(?:@|/)[0-9a-f]{40}(?:/|$)", re.IGNORECASE)
 ALLOWED_SECTIONS = {"General", "Host", "Proxy", "Proxy Group", "Rule"}
-ALLOWED_GROUP_TYPES = {"select", "url-test", "fallback", "smart"}
+ALLOWED_PROXY_TYPES = {
+    "https",
+    "hysteria2",
+    "snell",
+    "socks5-tls",
+    "ss",
+    "ssh",
+    "trojan",
+    "tuic",
+    "vmess",
+}
+ALLOWED_GROUP_TYPES = {"select", "url-test"}
 ALLOWED_GROUP_OPTIONS = {
     "evaluate-before-use",
     "hidden",
@@ -21,15 +34,12 @@ ALLOWED_GROUP_OPTIONS = {
     "include-other-group",
     "interval",
     "no-alert",
-    "policy-priority",
     "policy-regex-filter",
-    "timeout",
     "tolerance",
 }
 BUILTIN_POLICIES = {"DIRECT", "REJECT", "REJECT-DROP", "REJECT-NO-DROP"}
 RULE_TRAILING_OPTIONS = {"dns-failed", "extended-matching", "no-resolve"}
 ALLOWED_RULE_TYPES = {
-    "AND",
     "DEST-PORT",
     "DOMAIN",
     "DOMAIN-SUFFIX",
@@ -40,7 +50,7 @@ ALLOWED_RULE_TYPES = {
     "PROTOCOL",
     "RULE-SET",
 }
-DIRECT_RULE_TYPES = {"AND", "DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "IP-CIDR6"}
+DIRECT_RULE_TYPES = {"DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "IP-CIDR6"}
 REMOTE_RULE_PREFIXES = {
     "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd430/Rules/",
 }
@@ -70,41 +80,32 @@ RUNTIME_RULE_FILES = {
 }
 DIRECT_IP_RULES = {
     ("IP-CIDR", "10.0.0.0/8", "DIRECT"),
-    ("IP-CIDR", "100.64.0.0/10", "DIRECT"),
     ("IP-CIDR", "127.0.0.0/8", "DIRECT"),
     ("IP-CIDR", "169.254.0.0/16", "DIRECT"),
     ("IP-CIDR", "172.16.0.0/12", "DIRECT"),
     ("IP-CIDR", "192.168.0.0/16", "DIRECT"),
-    ("IP-CIDR", "17.188.20.0/23", "Apple Push"),
-    ("IP-CIDR", "17.188.128.0/18", "Apple Push"),
-    ("IP-CIDR", "17.249.0.0/16", "Apple Push"),
-    ("IP-CIDR", "17.252.0.0/16", "Apple Push"),
-    ("IP-CIDR", "17.57.144.0/22", "Apple Push"),
-    ("IP-CIDR6", "2403:300:a42::/48", "Apple Push"),
-    ("IP-CIDR6", "2403:300:a51::/48", "Apple Push"),
-    ("IP-CIDR6", "2620:149:a44::/48", "Apple Push"),
-    ("IP-CIDR6", "2a01:b740:a42::/48", "Apple Push"),
+    ("IP-CIDR", "17.188.20.0/23", "Apple"),
+    ("IP-CIDR", "17.188.128.0/18", "Apple"),
+    ("IP-CIDR", "17.249.0.0/16", "Apple"),
+    ("IP-CIDR", "17.252.0.0/16", "Apple"),
+    ("IP-CIDR", "17.57.144.0/22", "Apple"),
+    ("IP-CIDR6", "2403:300:a42::/48", "Apple"),
+    ("IP-CIDR6", "2403:300:a51::/48", "Apple"),
+    ("IP-CIDR6", "2620:149:a44::/48", "Apple"),
+    ("IP-CIDR6", "2a01:b740:a42::/48", "Apple"),
     ("IP-CIDR6", "::1/128", "DIRECT"),
     ("IP-CIDR6", "fc00::/7", "DIRECT"),
     ("IP-CIDR6", "fe80::/10", "DIRECT"),
 }
 DIRECT_BUILTIN_DOMAIN_RULES = {
-    ("DOMAIN", "captive.apple.com"),
-    ("DOMAIN", "miwifi.com"),
-    ("DOMAIN", "p.to"),
-    ("DOMAIN", "router.asus.com"),
-    ("DOMAIN", "tplogin.cn"),
-    ("DOMAIN-SUFFIX", "lan"),
+    ("DOMAIN", "localhost"),
+    ("DOMAIN", "sub.store"),
     ("DOMAIN-SUFFIX", "local"),
 }
+EXPECTED_DIRECT_DOMAIN_COUNT = 114
+EXPECTED_DIRECT_DOMAIN_SHA256 = "8306c8b702f54a4686d1d1621fdbb84861f03a19c2f0bb7809443493b168f3d7"
 EXPECTED_HOSTS = {
-    "push.apple.com": "server:https://223.6.6.6/dns-query",
-    "*.push.apple.com": "server:https://223.6.6.6/dns-query",
-    "push-apple.com.akadns.net": "server:https://223.6.6.6/dns-query",
-    "*.push-apple.com.akadns.net": "server:https://223.6.6.6/dns-query",
-    "apple.com.edgekey.net": "server:https://223.6.6.6/dns-query",
-    "*.apple.com.edgekey.net": "server:https://223.6.6.6/dns-query",
-    "www.apple.com": "server:https://223.6.6.6/dns-query",
+    "sub.store": "127.0.0.1",
 }
 
 
@@ -168,7 +169,7 @@ def main() -> int:
         "include-apns": "true",
         "include-cellular-services": "true",
         "ipv6": "true",
-        "ipv6-vif": "auto",
+        "ipv6-vif": "always",
         "auto-suspend": "false",
         "icmp-forwarding": "false",
         "udp-policy-not-supported-behaviour": "REJECT",
@@ -183,21 +184,21 @@ def main() -> int:
         "http-api-web-dashboard": "false",
         "wifi-assist": "false",
         "all-hybrid": "false",
-        "compatibility-mode": "0",
+        "compatibility-mode": "3",
         "exclude-simple-hostnames": "false",
         "allow-dns-svcb": "false",
         "use-local-host-item-for-proxy": "false",
         "disable-geoip-db-auto-update": "true",
         "dns-server": "223.5.5.5",
         "encrypted-dns-server": "https://223.5.5.5/dns-query",
-        "skip-proxy": "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, localhost, *.local, *.lan, ::1/128, fc00::/7, fe80::/10",
+        "skip-proxy": "192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, 127.0.0.0/8, 169.254.0.0/16, localhost, *.local, ::1/128, fc00::/7, fe80::/10",
         "loglevel": "warning",
         "internet-test-url": "http://www.apple.com/library/test/success.html",
         "proxy-test-url": "http://www.gstatic.com/generate_204",
         "test-timeout": "8",
         "show-error-page-for-reject": "false",
-        "always-real-ip": "<simple-hostname>, *.lan, *.local, *.direct, *.cmpassport.com, id6.me, open.e.189.cn, mdn.open.wo.cn, opencloud.wostore.cn, auth.wosms.cn, *.10099.com.cn",
-        "always-raw-tcp-hosts": "149.154.*, 91.108.*, *.push.apple.com:443, *.push-apple.com.akadns.net:443, *.apple.com.edgekey.net:443",
+        "always-real-ip": "<simple-hostname>, *.local, *.cmpassport.com, id6.me, open.e.189.cn, mdn.open.wo.cn, opencloud.wostore.cn, auth.wosms.cn, *.10099.com.cn",
+        "always-raw-tcp-hosts": "149.154.*, 91.108.*",
     }
     for key, expected in required_general.items():
         item = general.get(key)
@@ -233,7 +234,7 @@ def main() -> int:
     for key, value in EXPECTED_HOSTS.items():
         item = hosts.get(key)
         if not item or item[1] != value:
-            fail(f"APNs host override must be {key} = {value}", item[0] if item else None)
+            fail(f"required host mapping must be {key} = {value}", item[0] if item else None)
     for key, (number, _) in hosts.items():
         if key not in EXPECTED_HOSTS:
             fail(f"unapproved host override: {key}", number)
@@ -251,23 +252,25 @@ def main() -> int:
         proxy_types[name] = proxy_type
         if name.upper() in BUILTIN_POLICIES:
             fail(f"proxy may not shadow a built-in policy: {name}", number)
-        if proxy_type == "direct" and name != "APNs Direct":
-            fail(f"unapproved direct policy alias: {name}", number)
+        if name in FORBIDDEN_SPECIAL_POLICIES:
+            fail(f"obsolete APNs special policy is forbidden: {name}", number)
+        if proxy_type == "direct":
+            fail(f"direct policy aliases are forbidden: {name}", number)
         if proxy_type in {"external", "external-proxy"}:
             fail(f"external proxy programs are not allowed: {name}", number)
-        if proxy_type in {"http", "socks5"} and name != "Fail-Closed":
-            fail(f"unencrypted proxy type is not allowed: {name}", number)
-        if re.search(r"\bskip-cert-verify\s*=\s*true\b", value, re.IGNORECASE):
-            fail(f"certificate verification disabled for: {name}", number)
+        if name != "Fail-Closed" and proxy_type not in ALLOWED_PROXY_TYPES:
+            fail(f"unapproved or unencrypted proxy type: {name} = {proxy_type}", number)
+        insecure_parameters = (
+            r"\bskip-cert-verify\s*=\s*true\b",
+            r"\bskip-common-name-verify\s*=\s*true\b",
+            r"\ballow-insecure\s*=\s*true\b",
+            r"\btls-verification\s*=\s*false\b",
+        )
+        if any(re.search(pattern, value, re.IGNORECASE) for pattern in insecure_parameters):
+            fail(f"proxy certificate verification weakened for: {name}", number)
         if name == "Fail-Closed" and fields != ["http", "127.0.0.1", "1"]:
             fail("Fail-Closed must remain the local unreachable sentinel", number)
-        if name == "APNs Direct" and fields != [
-            "direct",
-            "test-url=http://www.apple.com/library/test/success.html",
-            "test-timeout=5",
-        ]:
-            fail("APNs Direct definition changed", number)
-        if name not in {"Fail-Closed", "APNs Direct"}:
+        if name != "Fail-Closed":
             if len(fields) < 3:
                 fail(f"proxy definition is incomplete: {name}", number)
             else:
@@ -276,8 +279,26 @@ def main() -> int:
                     ipaddress.ip_address(server)
                 except ValueError:
                     fail(f"proxy server must be an IP literal to avoid bootstrap DNS: {name}", number)
+                try:
+                    port = int(fields[2])
+                    if not 1 <= port <= 65535:
+                        raise ValueError
+                except ValueError:
+                    fail(f"proxy server port must be between 1 and 65535: {name}", number)
+            if proxy_type == "ss":
+                proxy_options = {
+                    key.strip().lower(): option.strip()
+                    for field in fields[3:]
+                    if "=" in field
+                    for key, option in [field.split("=", 1)]
+                }
+                method = proxy_options.get("encrypt-method", "").lower()
+                if not (method.endswith("-gcm") or method.endswith("-poly1305")):
+                    fail(f"Shadowsocks must use an AEAD encrypt-method: {name}", number)
+                if not proxy_options.get("password"):
+                    fail(f"Shadowsocks password is missing: {name}", number)
 
-    for required_proxy in ("Fail-Closed", "APNs Direct"):
+    for required_proxy in ("Fail-Closed",):
         if required_proxy not in proxy_types:
             fail(f"required proxy policy is missing: {required_proxy}")
 
@@ -308,6 +329,8 @@ def main() -> int:
             "members": members,
             "options": options,
         }
+        if name in FORBIDDEN_SPECIAL_POLICIES:
+            fail(f"obsolete APNs special policy group is forbidden: {name}", number)
         if group_type not in ALLOWED_GROUP_TYPES:
             fail(f"unapproved policy group type: {name} = {group_type}", number)
         for key in options:
@@ -339,6 +362,31 @@ def main() -> int:
             if member not in groups and member not in proxy_types and member not in BUILTIN_POLICIES:
                 fail(f"undefined policy member in {name}: {member}", int(group["line"]))
 
+    group_states: dict[str, int] = {}
+
+    def visit_group(name: str, stack: tuple[str, ...] = ()) -> None:
+        state = group_states.get(name, 0)
+        if state == 1:
+            fail(f"policy group cycle is forbidden: {' -> '.join(stack + (name,))}")
+            return
+        if state == 2:
+            return
+        group_states[name] = 1
+        group = groups[name]
+        members = list(group["members"])
+        options = group["options"]
+        assert isinstance(options, dict)
+        included = str(options.get("include-other-group", ""))
+        if included:
+            members.extend(part.strip() for part in included.split(",") if part.strip())
+        for member in members:
+            if member in groups:
+                visit_group(member, stack + (name,))
+        group_states[name] = 2
+
+    for group_name in groups:
+        visit_group(group_name)
+
     all_server = groups.get("AllServer")
     if all_server:
         options = all_server["options"]
@@ -346,41 +394,17 @@ def main() -> int:
         policy_filter = str(options.get("policy-regex-filter", ""))
         if str(options.get("include-all-proxies", "")).lower() not in {"1", "true"}:
             fail("AllServer must include locally defined proxies", int(all_server["line"]))
-        if "Fail-Closed" not in policy_filter or "APNs Direct" not in policy_filter:
-            fail("AllServer filter must exclude reserved direct/sentinel aliases", int(all_server["line"]))
+        if "Fail-Closed" not in policy_filter:
+            fail("AllServer filter must exclude the failure sentinel alias", int(all_server["line"]))
         try:
             compiled_filter = re.compile(policy_filter)
         except re.error as exc:
             fail(f"AllServer policy filter is invalid: {exc}", int(all_server["line"]))
         else:
-            if compiled_filter.search("Fail-Closed") or compiled_filter.search("APNs Direct"):
-                fail("AllServer policy filter does not actually exclude reserved aliases", int(all_server["line"]))
+            if compiled_filter.search("Fail-Closed"):
+                fail("AllServer policy filter does not actually exclude the sentinel alias", int(all_server["line"]))
             if not compiled_filter.search("Vetted-US-Node"):
                 fail("AllServer policy filter rejects an ordinary vetted node", int(all_server["line"]))
-
-    apns_proxy = groups.get("APNs Proxy")
-    if not apns_proxy:
-        fail("APNs Proxy group is missing")
-    else:
-        apns_proxy_options = apns_proxy["options"]
-        assert isinstance(apns_proxy_options, dict)
-        if apns_proxy["type"] != "smart" or list(apns_proxy["members"]):
-            fail("APNs Proxy must remain a smart group without direct members", int(apns_proxy["line"]))
-        if apns_proxy_options.get("include-other-group") != "AllServer":
-            fail("APNs Proxy must source vetted policies from AllServer", int(apns_proxy["line"]))
-        if apns_proxy_options.get("policy-priority") != "^Fail-Closed$:1000":
-            fail("APNs Proxy must strongly de-prioritize Fail-Closed", int(apns_proxy["line"]))
-
-    apple_push = groups.get("Apple Push")
-    if not apple_push:
-        fail("Apple Push group is missing")
-    else:
-        apple_push_options = apple_push["options"]
-        assert isinstance(apple_push_options, dict)
-        if apple_push["type"] != "fallback" or list(apple_push["members"]) != ["APNs Proxy", "APNs Direct"]:
-            fail("Apple Push must remain proxy-first with APNs Direct as final fallback", int(apple_push["line"]))
-        if apple_push_options.get("interval") != "600" or apple_push_options.get("timeout") != "5":
-            fail("Apple Push fallback timing changed", int(apple_push["line"]))
 
     direct_cache: dict[str, bool] = {}
 
@@ -409,32 +433,42 @@ def main() -> int:
             fail(f"policy group unexpectedly reaches DIRECT: {name}", int(group["line"]))
 
     rules = sections.get("Rule", [])
-    stun_index = doh_index = apns_doh_index = None
+    stun_index = doh_index = quic_index = udp_index = dns53_index = None
     first_broad_direct = None
-    push_index = apple_suffix_index = None
     final_entries: list[tuple[int, str]] = []
     remote_count = 0
     remote_files: dict[str, int] = {}
+    seen_rules: dict[str, int] = {}
+    seen_direct_ip_rules: set[tuple[str, str, str]] = set()
+    direct_domain_rules: list[str] = []
 
     for index, (number, line) in enumerate(rules):
+        if line in seen_rules:
+            fail(f"duplicate main rule (first referenced at line {seen_rules[line]})", number)
+        else:
+            seen_rules[line] = number
         upper = line.upper()
         if upper.startswith("PROTOCOL,STUN,"):
             stun_index = index
             if not upper.endswith(",PROXY"):
                 fail("STUN must use Proxy", number)
+        if upper.startswith("PROTOCOL,QUIC,"):
+            quic_index = index
+            if not upper.endswith(",PROXY"):
+                fail("QUIC must use Proxy", number)
+        if upper.startswith("PROTOCOL,UDP,"):
+            udp_index = index
+            if not upper.endswith(",PROXY"):
+                fail("UDP must use Proxy", number)
         if upper.startswith("PROTOCOL,DOH,"):
             doh_index = index
             if not upper.endswith(",PROXY"):
                 fail("DoH must use Proxy", number)
-        if "PROTOCOL,DOH" in upper and "223.6.6.6" in line and upper.endswith(",DIRECT"):
-            apns_doh_index = index
         if upper.startswith("PROTOCOL,DOH3,") or upper.startswith("PROTOCOL,DOQ,"):
             if not upper.endswith(",PROXY"):
                 fail("DoH3/DoQ must use Proxy", number)
-        if upper.startswith("DOMAIN-SUFFIX,PUSH.APPLE.COM,APPLE PUSH"):
-            push_index = index
-        if upper.startswith("DOMAIN-SUFFIX,APPLE.COM,APPLE"):
-            apple_suffix_index = index
+        if upper == "DEST-PORT,53,REJECT":
+            dns53_index = index
         if upper.startswith("FINAL,"):
             final_entries.append((number, line))
 
@@ -459,21 +493,26 @@ def main() -> int:
         if policy not in groups and policy not in proxy_types and policy not in BUILTIN_POLICIES:
             fail(f"rule uses an undefined policy: {policy}", number)
         direct_rule = reaches_direct(policy) or policy == "DIRECT"
-        narrow_apns_dns = "PROTOCOL,DOH" in upper and "223.6.6.6" in line
-        if direct_rule and not narrow_apns_dns and first_broad_direct is None:
+        if direct_rule and first_broad_direct is None:
             first_broad_direct = index
         if direct_rule and rule_type not in DIRECT_RULE_TYPES:
             fail(f"rule type may not grant DIRECT: {rule_type}", number)
         if direct_rule and rule_type in {"IP-CIDR", "IP-CIDR6"}:
             target = fields[1] if len(fields) > 1 else ""
-            if (rule_type, target, policy) not in DIRECT_IP_RULES:
+            direct_ip_rule = (rule_type, target, policy)
+            seen_direct_ip_rules.add(direct_ip_rule)
+            if direct_ip_rule not in DIRECT_IP_RULES:
                 fail(f"unapproved DIRECT-capable network: {target}", number)
+        if direct_rule and rule_type in {"DOMAIN", "DOMAIN-SUFFIX"} and len(fields) > 1:
+            direct_domain_rules.append(f"{rule_type},{fields[1].lower()},{policy}")
         if direct_rule and policy == "DIRECT" and rule_type in {"DOMAIN", "DOMAIN-SUFFIX"}:
             target = fields[1].lower() if len(fields) > 1 else ""
             if (rule_type, target) not in DIRECT_BUILTIN_DOMAIN_RULES:
                 fail(f"unapproved built-in DIRECT domain: {target}", number)
-        if direct_rule and rule_type == "AND" and line != "AND,((PROTOCOL,DOH),(DEST-PORT,443),(IP-CIDR,223.6.6.6/32)),DIRECT":
-            fail("only the exact APNs DoH logical rule may grant DIRECT", number)
+        if direct_rule and rule_type == "DOMAIN-SUFFIX":
+            target = fields[1].lower() if len(fields) > 1 else ""
+            if "." not in target and target != "local":
+                fail(f"top-level suffix may not grant DIRECT: {target}", number)
 
         if len(fields) >= 2 and fields[0].upper() in {"RULE-SET", "DOMAIN-SET"} and fields[1].startswith(("http://", "https://")):
             remote_count += 1
@@ -499,24 +538,47 @@ def main() -> int:
             if direct_rule:
                 fail("remote rules may not feed a DIRECT-capable policy", number)
 
-    if apns_doh_index is None or doh_index is None or doh_index != apns_doh_index + 1:
-        fail("APNs DoH exception must immediately precede the generic DoH proxy guard")
-    elif [line.upper() for _, line in rules[doh_index : doh_index + 3]] != [
+    if doh_index is None or [line.upper() for _, line in rules[doh_index : doh_index + 3]] != [
         "PROTOCOL,DOH,PROXY",
         "PROTOCOL,DOH3,PROXY",
         "PROTOCOL,DOQ,PROXY",
     ]:
         fail("DoH, DoH3 and DoQ proxy guards must remain contiguous")
-    if stun_index is None or (first_broad_direct is not None and stun_index > first_broad_direct):
-        fail("STUN guard must precede all broad DIRECT-capable rules")
-    if push_index is None or (apple_suffix_index is not None and push_index > apple_suffix_index):
-        fail("push.apple.com must enter Apple Push before broad Apple rules")
+    if dns53_index is None or (doh_index is not None and dns53_index < doh_index + 3):
+        fail("plain DNS port 53 guard must follow the encrypted DNS guards")
+    if None in {stun_index, quic_index, udp_index}:
+        fail("STUN, QUIC and UDP proxy guards are all required")
+    elif [line.upper() for _, line in rules[stun_index : stun_index + 3]] != [
+        "PROTOCOL,STUN,PROXY",
+        "PROTOCOL,QUIC,PROXY",
+        "PROTOCOL,UDP,PROXY",
+    ]:
+        fail("STUN, QUIC and UDP proxy guards must remain contiguous")
+    for label, guard_index in (("DoH", doh_index), ("DNS/53", dns53_index), ("STUN", stun_index), ("QUIC", quic_index), ("UDP", udp_index)):
+        if guard_index is not None and first_broad_direct is not None and guard_index > first_broad_direct:
+            fail(f"{label} guard must precede all DIRECT-capable rules")
     if len(final_entries) != 1 or final_entries[0][1].upper() != "FINAL,FINAL,DNS-FAILED":
         fail("profile must have exactly one FINAL,Final,dns-failed rule")
     if rules and final_entries and final_entries[0][0] != rules[-1][0]:
         fail("FINAL must be the last active rule", final_entries[0][0])
     if remote_count != 22:
         fail(f"expected 22 immutable remote rules, found {remote_count}")
+    for required_rule in ("DOMAIN,localhost,DIRECT", "DOMAIN,sub.store,DIRECT"):
+        if required_rule not in seen_rules:
+            fail(f"required local-only rule is missing: {required_rule}")
+    missing_direct_ip_rules = sorted(DIRECT_IP_RULES - seen_direct_ip_rules)
+    if missing_direct_ip_rules:
+        fail(f"required DIRECT-capable networks are missing: {missing_direct_ip_rules}")
+    direct_domain_payload = ("\n".join(sorted(direct_domain_rules)) + "\n").encode("utf-8")
+    direct_domain_digest = hashlib.sha256(direct_domain_payload).hexdigest()
+    if (
+        len(direct_domain_rules) != EXPECTED_DIRECT_DOMAIN_COUNT
+        or direct_domain_digest != EXPECTED_DIRECT_DOMAIN_SHA256
+    ):
+        fail(
+            "DIRECT-capable domain allowlist changed: "
+            f"count={len(direct_domain_rules)} sha256={direct_domain_digest}"
+        )
     missing_remote_files = sorted(RUNTIME_RULE_FILES - remote_files.keys())
     unexpected_remote_files = sorted(remote_files.keys() - RUNTIME_RULE_FILES)
     if missing_remote_files:
