@@ -32,6 +32,15 @@ def replace_once(source: str, old: str, new: str) -> str:
     return source.replace(old, new, 1)
 
 
+def swap_once(source: str, first: str, second: str) -> str:
+    if source.count(first) != 1 or source.count(second) != 1:
+        raise AssertionError(f"swap anchors must occur exactly once: {first!r}, {second!r}")
+    marker = "__SURGE_AUDIT_SWAP_MARKER__"
+    if marker in source:
+        raise AssertionError("swap marker unexpectedly appears in fixture")
+    return source.replace(first, marker, 1).replace(second, first, 1).replace(marker, second, 1)
+
+
 def main() -> int:
     baseline = PROFILE.read_text(encoding="utf-8-sig")
     result = audit(baseline)
@@ -40,7 +49,27 @@ def main() -> int:
         print("FAIL: baseline profile did not pass its auditor", file=sys.stderr)
         return 1
 
+    build_line = next(
+        line for line in baseline.splitlines() if line.startswith("# 构建: ")
+    )
+    tampered_build = build_line[:-1] + ("0" if build_line[-1] != "0" else "1")
+
     cases = {
+        "minimum version metadata removed": replace_once(
+            baseline,
+            "# 最低版本: Surge iOS 5.14.6+\n",
+            "",
+        ),
+        "service provenance metadata removed": replace_once(
+            baseline,
+            "# 来源与许可见 NOTICE.md；本次服务规则固定于 blackmatrix7@c00517ce10760a93728b241923a451dfa617be80（GPL-2.0）。\n",
+            "",
+        ),
+        "build digest tampered": replace_once(
+            baseline,
+            build_line,
+            tampered_build,
+        ),
         "runtime policy subscription": replace_once(
             baseline,
             "policy-path=此处填入Sub-Store转换后的订阅链接",
@@ -100,6 +129,51 @@ def main() -> int:
             baseline,
             "PROTOCOL,UDP,Proxy",
             "PROTOCOL,UDP,DIRECT",
+        ),
+        "encrypted DNS bootstrap removed": replace_once(
+            baseline,
+            "AND,((PROTOCOL,DOH),(DOMAIN,223.5.5.5)),DIRECT\n",
+            "",
+        ),
+        "encrypted DNS bootstrap broadened": replace_once(
+            baseline,
+            "AND,((PROTOCOL,DOH),(DOMAIN,223.5.5.5)),DIRECT",
+            "PROTOCOL,DOH,DIRECT",
+        ),
+        "mDNS IPv4 exception removed": replace_once(
+            baseline,
+            "IP-CIDR,224.0.0.251/32,DIRECT,no-resolve\n",
+            "",
+        ),
+        "mDNS exception broadened": replace_once(
+            baseline,
+            "IP-CIDR,224.0.0.251/32,DIRECT,no-resolve",
+            "IP-CIDR,224.0.0.0/24,DIRECT,no-resolve",
+        ),
+        "discovery exception follows multicast reject": swap_once(
+            baseline,
+            "IP-CIDR,224.0.0.251/32,DIRECT,no-resolve",
+            "IP-CIDR,224.0.0.0/4,REJECT,no-resolve",
+        ),
+        "generic UDP fallback precedes LAN": swap_once(
+            baseline,
+            "IP-CIDR,10.0.0.0/8,DIRECT,no-resolve",
+            "PROTOCOL,STUN,Proxy",
+        ),
+        "Google shadows YouTube": swap_once(
+            baseline,
+            "RULE-SET,RS_YouTube,YouTube,extended-matching",
+            "RULE-SET,RS_Google,Google,extended-matching",
+        ),
+        "Microsoft shadows Game": swap_once(
+            baseline,
+            "RULE-SET,RS_Game,Games,extended-matching",
+            "RULE-SET,RS_Microsoft,Microsoft,extended-matching",
+        ),
+        "legacy ad ruleset reference": replace_once(
+            baseline,
+            "RULE-SET,RS_Ads_Custom_Extra,AdBlock,extended-matching",
+            "RULE-SET,RS_Ads_SukkaW_Extra,AdBlock,extended-matching",
         ),
         "top-level CN direct suffix": replace_once(
             baseline,

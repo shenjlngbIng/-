@@ -39,6 +39,7 @@ ALLOWED_GROUP_OPTIONS = {
 BUILTIN_POLICIES = {"DIRECT", "REJECT", "REJECT-DROP", "REJECT-NO-DROP"}
 RULE_TRAILING_OPTIONS = {"dns-failed", "extended-matching", "no-resolve"}
 ALLOWED_RULE_TYPES = {
+    "AND",
     "DEST-PORT",
     "DOMAIN",
     "DOMAIN-KEYWORD",
@@ -52,28 +53,28 @@ ALLOWED_RULE_TYPES = {
 }
 DIRECT_RULE_TYPES = {"DOMAIN", "DOMAIN-SUFFIX", "IP-CIDR", "IP-CIDR6"}
 INLINE_RULESETS = {
-    "RS_Ads_SukkaW_Extra": ("Ads_SukkaW_Extra.list", 206, "a97509c9cd7a9f22e1f5339e35299fee4b66b163b49f5d7fba1e199ad010af49"),
-    "RS_Bahamut": ("Bahamut.list", 5, "2226159701061259c300e849517146eb68da08e9fbe34814ac917b074e564859"),
+    "RS_Ads_Custom_Extra": ("Ads_Custom_Extra.list", 206, "a97509c9cd7a9f22e1f5339e35299fee4b66b163b49f5d7fba1e199ad010af49"),
+    "RS_Bahamut": ("Bahamut.list", 10, "78ca9e8af828130ea1807d57f5b0cfb42e40c42d5c6a8eda5bd98a544384f833"),
     "RS_BiliBiliIntl": ("BiliBiliIntl.list", 1, "40502ce8ef7356d89f3c0ab5f78fce58cbbff115950b70c06900086c1e4c5d9d"),
-    "RS_ChatGPT": ("ChatGPT.list", 34, "960d48ef67348f48fbe7e6ff99e9c91d8595c8cdc378cf445e823d3de93ae436"),
-    "RS_Claude": ("Claude.list", 6, "632c207163dc335818c5e12dc9881a8b890023009e3ca4754b21b45aa0965e73"),
-    "RS_Disney": ("Disney.list", 172, "dd32b132007877b6818cf8475866cfacd5087d510dc0df4d4e3e2a7cda5ae9fe"),
-    "RS_Emby": ("Emby.list", 194, "016b79069e993aa724f589df33595f4ff8d4c2ecf8b24ce05353f9bb1e6b649a"),
+    "RS_ChatGPT": ("ChatGPT.list", 52, "60c87c4a6c2cbf3d846454b7b42f6107526f2f9fa9c11e5c785a2e85bb5943ce"),
+    "RS_Claude": ("Claude.list", 6, "6760dfeb03df7d4a169c812b1540916bcbd599ccc77610e9f74121857d3d056c"),
+    "RS_Disney": ("Disney.list", 172, "c881730102bda2cdf4582d799bcf363180277a65f32b9d5eaff9260bf8b02db1"),
+    "RS_Emby": ("Emby.list", 218, "ba37387017c311ae74ae0050ea42f7751251047ceca88123b0a173e89b87fdd8"),
     "RS_Game": ("Game.list", 597, "d355395a460916e44bc1a2f5fddaf755a05411e96e5111118f5687a36e868014"),
-    "RS_Gemini": ("Gemini.list", 16, "a0a611a00413113bf0f0905885c67301992587e6b5707c040fa706268a538236"),
-    "RS_Github": ("Github.list", 6, "9114baf99e67342f62d948cd115715d2c3d513c60915b2ea994c758d38c098f3"),
-    "RS_Google": ("Google.list", 25, "d09387d7d5981a19dc20a045382c423ab97939ac0db53b5e330eda80f86ac78f"),
-    "RS_HBO": ("HBO.list", 42, "3dfaf0f1013b6a2a60ca5320c5beeba8230a43775844d8d2919a8bd796e8369d"),
-    "RS_Microsoft": ("Microsoft.list", 79, "280226408c37c0e103e151af24acb651a6fdd9257e51e17ac7a0be0d83f970db"),
-    "RS_Netflix": ("Netflix.list", 40, "629a080a9edda858d1c18d17ca3ee874ca461ff09e98243e1f92e980f53789c1"),
-    "RS_OneDrive": ("OneDrive.list", 15, "32f28218755b7e45c9278c005b8bcaa817b921bd2420c11ef1d97b8bca4df015"),
-    "RS_PrimeVideo": ("PrimeVideo.list", 15, "31800847ffeaaf7bd1889b4b1917f587aeaa85395c0426f76bcc38b208e9330b"),
+    "RS_Gemini": ("Gemini.list", 21, "f7c6d2ab31f844eb97d0d9379ad6ac5f316bbf668c7f0a5da6598cb317483cc7"),
+    "RS_Github": ("Github.list", 31, "95299a16144b19c5ff24298c6ba2ab731dc05b99c22340b566408cedf71124ea"),
+    "RS_Google": ("Google.list", 705, "c3d58d4cb256a5770fbf10e0c3bf22106a722756f132011e5c84d777c83d4e1e"),
+    "RS_HBO": ("HBO.list", 47, "2c8b931844b331b0b42db6eda6926b5259db0a977da48d0430541b51ef4aae0a"),
+    "RS_Microsoft": ("Microsoft.list", 669, "5083f3946f3fbe1b3f34563fb207f38888aafaa98bca084140ae09175b674c48"),
+    "RS_Netflix": ("Netflix.list", 1154, "7d91b049f5773883b487ae08248e2da0eafabe29fe0c2af43d615569cb4d19f0"),
+    "RS_OneDrive": ("OneDrive.list", 16, "c8f86f71aa796fae87042f301c82219a1acb457e292e98dedfb27e494395cde6"),
+    "RS_PrimeVideo": ("PrimeVideo.list", 18, "6f30ff4bcf5d38f317f1333298b36fc499d4161bd3f54c700c85e03ac2ffcd73"),
     "RS_ProxyMedia": ("ProxyMedia.list", 321, "4af6caf4869a48522e7993c81922965cfdd585e47467ec332b335209941639b1"),
     "RS_Reject": ("Reject.list", 6210, "a344f68cc0051dc7581524c86d5ac38fbac5d918b0872b47beca0501f6a90470"),
-    "RS_Spotify": ("Spotify.list", 29, "407613bc81c2d5ab0f4b0c07c6cfde0071ed494723236181c0f3352c70f804de"),
-    "RS_TikTok": ("TikTok.list", 76, "a148ce48d96d8f281e4bcbdeb06f7cd3a368327a7eec832c9ddcea59e0cf4a60"),
-    "RS_Twitter": ("Twitter.list", 12, "242562e9415174cf35616a591f36da5afbfae759be1d10dabf8cb4569101cda2"),
-    "RS_YouTube": ("YouTube.list", 14, "989829f4eb0533df7583af19c1b94aae83748a85cb1ae8b0a733a339bf2e2c7e"),
+    "RS_Spotify": ("Spotify.list", 30, "38ec3e72e9bf0a344c0fcff75abc348fae9cbc22d052913369040630bcc545f6"),
+    "RS_TikTok": ("TikTok.list", 87, "f39ff9a61ec1ce7eabf9410384252b1130fe475869d0f445c190f0fd34d0c656"),
+    "RS_Twitter": ("Twitter.list", 33, "371a1ead914bfa4ff5ff4ca338111d6e088517cf4792dd0bd43448b9331d1eb8"),
+    "RS_YouTube": ("YouTube.list", 192, "29d0f6217491bcc2e8b45502cd8b501ec1951962228149951d1b032a16574003"),
 }
 APNS_PROXY_RULES = {
     "DOMAIN-SUFFIX,push.apple.com,Proxy",
@@ -97,9 +98,13 @@ DIRECT_IP_RULES = {
     ("IP-CIDR", "169.254.0.0/16", "DIRECT"),
     ("IP-CIDR", "172.16.0.0/12", "DIRECT"),
     ("IP-CIDR", "192.168.0.0/16", "DIRECT"),
+    ("IP-CIDR", "224.0.0.251/32", "DIRECT"),
+    ("IP-CIDR", "239.255.255.250/32", "DIRECT"),
     ("IP-CIDR6", "::1/128", "DIRECT"),
     ("IP-CIDR6", "fc00::/7", "DIRECT"),
     ("IP-CIDR6", "fe80::/10", "DIRECT"),
+    ("IP-CIDR6", "ff02::c/128", "DIRECT"),
+    ("IP-CIDR6", "ff02::fb/128", "DIRECT"),
 }
 DIRECT_BUILTIN_DOMAIN_RULES = {
     ("DOMAIN", "localhost"),
@@ -110,6 +115,21 @@ EXPECTED_DIRECT_DOMAIN_COUNT = 110
 EXPECTED_DIRECT_DOMAIN_SHA256 = "85e52c57478017d849caf5ffa51deb7269ba33fa4f972a2b701e9eb4cf94467c"
 EXPECTED_HOSTS = {
     "sub.store": "127.0.0.1",
+}
+SERVICE_RULE_COMMIT = "c00517ce10760a93728b241923a451dfa617be80"
+REQUIRED_PROFILE_COMMENTS = {
+    "# Surge iOS · Fail-Closed",
+    "# 最低版本: Surge iOS 5.14.6+",
+    "# 来源与许可见 NOTICE.md；本次服务规则固定于 "
+    f"blackmatrix7@{SERVICE_RULE_COMMIT}（GPL-2.0）。",
+}
+BUILD_ID = re.compile(r"IOS-HARDENED-[0-9]{8}-REVIEWED-R6-([0-9A-F]{8})")
+DOH_BOOTSTRAP_RULE = "AND,((PROTOCOL,DOH),(DOMAIN,223.5.5.5)),DIRECT"
+DISCOVERY_DIRECT_RULES = {
+    "IP-CIDR,224.0.0.251/32,DIRECT,no-resolve",
+    "IP-CIDR,239.255.255.250/32,DIRECT,no-resolve",
+    "IP-CIDR6,ff02::fb/128,DIRECT,no-resolve",
+    "IP-CIDR6,ff02::c/128,DIRECT,no-resolve",
 }
 SUBSTORE_REQUIRED_COMMENTS = {
     "# 【Sub-Store 转换订阅地址填写处】只替换下方 policy-path 的中文占位文字",
@@ -135,6 +155,34 @@ def main() -> int:
     except (OSError, UnicodeError) as exc:
         print(f"ERROR: cannot read profile: {exc}", file=sys.stderr)
         return 2
+    errors: list[str] = []
+
+    def fail(message: str, line: int | None = None) -> None:
+        prefix = f"line {line}: " if line else ""
+        errors.append(prefix + message)
+
+    for comment in sorted(REQUIRED_PROFILE_COMMENTS):
+        if comment not in source_lines:
+            fail(f"required profile metadata is missing: {comment}")
+    build_lines = [line for line in source_lines if line.startswith("# 构建: ")]
+    if len(build_lines) != 1:
+        fail("profile must contain exactly one build identifier")
+    else:
+        build_id = build_lines[0].removeprefix("# 构建: ")
+        match = BUILD_ID.fullmatch(build_id)
+        if not match:
+            fail(f"invalid or unfinished build identifier: {build_id}")
+        else:
+            normalized = "\n".join(
+                "# 构建: <normalized>" if line == build_lines[0] else line
+                for line in source_lines
+            ) + "\n"
+            expected_digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:8].upper()
+            if match.group(1) != expected_digest:
+                fail(
+                    f"build identifier digest mismatch: expected {expected_digest}, "
+                    f"got {match.group(1)}"
+                )
     sections: dict[str, list[tuple[int, str]]] = {}
     duplicate_sections: list[tuple[int, str]] = []
     current = ""
@@ -149,12 +197,6 @@ def main() -> int:
             sections.setdefault(current, [])
             continue
         sections.setdefault(current, []).append((number, line))
-
-    errors: list[str] = []
-
-    def fail(message: str, line: int | None = None) -> None:
-        prefix = f"line {line}: " if line else ""
-        errors.append(prefix + message)
 
     for comment in sorted(SUBSTORE_REQUIRED_COMMENTS):
         if comment not in source_lines:
@@ -483,7 +525,7 @@ def main() -> int:
 
     rules = sections.get("Rule", [])
     stun_index = doh_index = quic_index = udp_index = dns53_index = None
-    first_broad_direct = None
+    doh_bootstrap_index = None
     final_entries: list[tuple[int, str]] = []
     external_rule_count = 0
     inline_references: dict[str, int] = {}
@@ -494,13 +536,20 @@ def main() -> int:
     apple_domain_index = None
     system_ruleset_index = None
     direct_domain_rules: list[str] = []
+    direct_rule_indices: list[int] = []
+    rule_indices: dict[str, int] = {}
 
     for index, (number, line) in enumerate(rules):
         if line in seen_rules:
             fail(f"duplicate main rule (first referenced at line {seen_rules[line]})", number)
         else:
             seen_rules[line] = number
+            rule_indices[line] = index
         upper = line.upper()
+        if line == DOH_BOOTSTRAP_RULE:
+            if doh_bootstrap_index is not None:
+                fail("duplicate encrypted DNS bootstrap exception", number)
+            doh_bootstrap_index = index
         if upper.startswith("PROTOCOL,STUN,"):
             stun_index = index
             if not upper.endswith(",PROXY"):
@@ -533,6 +582,8 @@ def main() -> int:
         rule_type = fields[0].upper() if fields else ""
         if rule_type not in ALLOWED_RULE_TYPES:
             fail(f"unsupported main rule type: {rule_type}", number)
+        if rule_type == "AND" and line != DOH_BOOTSTRAP_RULE:
+            fail("only the exact encrypted DNS bootstrap AND rule is approved", number)
         if rule_type in {"DOMAIN", "DOMAIN-KEYWORD", "DOMAIN-SUFFIX", "DEST-PORT", "PROTOCOL"} and len(fields) != 3:
             fail(f"malformed {rule_type} rule", number)
         if rule_type in {"IP-ASN", "IP-CIDR", "IP-CIDR6"}:
@@ -579,12 +630,18 @@ def main() -> int:
             apple_domain_index = index
 
         direct_rule = reaches_direct(policy) or policy == "DIRECT"
-        if direct_rule and first_broad_direct is None:
-            first_broad_direct = index
+        if direct_rule:
+            direct_rule_indices.append(index)
         approved_system_binding = line == "RULE-SET,SYSTEM,Apple"
+        approved_doh_bootstrap = line == DOH_BOOTSTRAP_RULE
         if direct_rule and rule_type == "RULE-SET" and not approved_system_binding:
             fail("only the built-in SYSTEM ruleset may feed the DIRECT-capable Apple group", number)
-        elif direct_rule and rule_type not in DIRECT_RULE_TYPES and not approved_system_binding:
+        elif (
+            direct_rule
+            and rule_type not in DIRECT_RULE_TYPES
+            and not approved_system_binding
+            and not approved_doh_bootstrap
+        ):
             fail(f"rule type may not grant DIRECT: {rule_type}", number)
         if direct_rule and rule_type in {"IP-CIDR", "IP-CIDR6"}:
             target = fields[1] if len(fields) > 1 else ""
@@ -603,14 +660,37 @@ def main() -> int:
             if "." not in target and target != "local":
                 fail(f"top-level suffix may not grant DIRECT: {target}", number)
 
+    if doh_bootstrap_index is None:
+        fail("the exact encrypted DNS bootstrap exception is required")
     if doh_index is None or [line.upper() for _, line in rules[doh_index : doh_index + 3]] != [
         "PROTOCOL,DOH,PROXY",
         "PROTOCOL,DOH3,PROXY",
         "PROTOCOL,DOQ,PROXY",
     ]:
         fail("DoH, DoH3 and DoQ proxy guards must remain contiguous")
+    elif doh_bootstrap_index is not None and doh_index != doh_bootstrap_index + 1:
+        fail("the exact encrypted DNS bootstrap exception must immediately precede the DoH proxy guards")
     if dns53_index is None or (doh_index is not None and dns53_index < doh_index + 3):
         fail("plain DNS port 53 guard must follow the encrypted DNS guards")
+
+    missing_discovery_rules = sorted(DISCOVERY_DIRECT_RULES - seen_rules.keys())
+    if missing_discovery_rules:
+        fail(f"required local discovery exceptions are missing: {missing_discovery_rules}")
+    multicast_reject_rules = {
+        "IP-CIDR,224.0.0.0/4,REJECT,no-resolve",
+        "IP-CIDR6,ff00::/8,REJECT,no-resolve",
+    }
+    missing_multicast_rejects = sorted(multicast_reject_rules - seen_rules.keys())
+    if missing_multicast_rejects:
+        fail(f"required multicast reject rules are missing: {missing_multicast_rejects}")
+    elif not missing_discovery_rules and max(rule_indices[rule] for rule in DISCOVERY_DIRECT_RULES) >= min(
+        rule_indices[rule] for rule in multicast_reject_rules
+    ):
+        fail("local mDNS/SSDP discovery exceptions must precede the broad multicast rejects")
+
+    lan_direct_index = rule_indices.get("IP-CIDR,10.0.0.0/8,DIRECT,no-resolve")
+    if dns53_index is not None and lan_direct_index is not None and dns53_index > lan_direct_index:
+        fail("plain DNS port 53 guard must precede ordinary LAN direct rules")
     if None in {stun_index, quic_index, udp_index}:
         fail("STUN, QUIC and UDP proxy guards are all required")
     elif [line.upper() for _, line in rules[stun_index : stun_index + 3]] != [
@@ -619,13 +699,28 @@ def main() -> int:
         "PROTOCOL,UDP,PROXY",
     ]:
         fail("STUN, QUIC and UDP proxy guards must remain contiguous")
-    for label, guard_index in (("DoH", doh_index), ("DNS/53", dns53_index), ("STUN", stun_index), ("QUIC", quic_index), ("UDP", udp_index)):
-        if guard_index is not None and first_broad_direct is not None and guard_index > first_broad_direct:
-            fail(f"{label} guard must precede all DIRECT-capable rules")
+    elif direct_rule_indices and stun_index is not None and stun_index <= max(direct_rule_indices):
+        fail("generic STUN/QUIC/UDP fallback must follow every explicit DIRECT-capable rule")
+
+    ordered_pairs = (
+        ("RULE-SET,RS_ChatGPT,ChatGPT,extended-matching", "PROTOCOL,STUN,Proxy"),
+        ("RULE-SET,RS_YouTube,YouTube,extended-matching", "RULE-SET,RS_Google,Google,extended-matching"),
+        ("RULE-SET,RS_OneDrive,Microsoft,extended-matching", "RULE-SET,RS_Microsoft,Microsoft,extended-matching"),
+        ("RULE-SET,RS_Game,Games,extended-matching", "RULE-SET,RS_Microsoft,Microsoft,extended-matching"),
+        ("RULE-SET,RS_Microsoft,Microsoft,extended-matching", "PROTOCOL,STUN,Proxy"),
+    )
+    for before, after in ordered_pairs:
+        left = rule_indices.get(before)
+        right = rule_indices.get(after)
+        if left is None or right is None or left >= right:
+            fail(f"required rule precedence is missing: {before} before {after}")
     if len(final_entries) != 1 or final_entries[0][1].upper() != "FINAL,FINAL,DNS-FAILED":
         fail("profile must have exactly one FINAL,Final,dns-failed rule")
     if rules and final_entries and final_entries[0][0] != rules[-1][0]:
         fail("FINAL must be the last active rule", final_entries[0][0])
+    final_index = rule_indices.get("FINAL,Final,dns-failed")
+    if udp_index is not None and final_index is not None and udp_index + 1 != final_index:
+        fail("generic UDP fallback must immediately precede FINAL")
     if external_rule_count:
         fail(f"expected no external runtime rules, found {external_rule_count}")
     for required_rule in ("DOMAIN,localhost,DIRECT", "DOMAIN,sub.store,DIRECT"):

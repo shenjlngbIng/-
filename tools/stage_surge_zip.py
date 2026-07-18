@@ -27,7 +27,9 @@ def normalized_target(name: str) -> PurePosixPath | None:
     if not parts:
         return None
     target = PurePosixPath(*parts)
-    if str(target) in {"Surge.conf", "README.md", "NOTICE.md"}:
+    if str(target) in {"Surge.conf", "README.md", "NOTICE.md", "CHANGELOG.md"}:
+        return target
+    if str(target) == "Rules/upstreams.lock.json":
         return target
     if len(target.parts) == 2 and target.parts[0] == "Rules" and target.suffix == ".list":
         return target
