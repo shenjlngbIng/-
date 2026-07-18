@@ -1,8 +1,8 @@
 # Surge iOS 严格闭锁配置
 
-这是一个面向 Surge iOS 的个人配置模板。安全基线是：**国内与 Apple 的既有直连属于明确选择；境外、未知、业务 DNS、IPv4/IPv6、QUIC、UDP/STUN 在节点、订阅、规则或解析失效时不得意外回落到直连。**
+这是一个面向 Surge iOS 的个人配置模板。安全基线是：**国内与非推送 Apple 流量的既有直连属于明确选择；APNs、境外、未知、业务 DNS、IPv4/IPv6、QUIC、UDP/STUN 在节点、订阅、规则或解析失效时不得意外回落到直连。**
 
-本配置不为推送可用性保留独立 APNs 直连、专用 DNS 或 fallback。APNs 仍由 Surge VIF 接管，并统一使用普通 `Apple` 策略。
+为处理中国内地网络下 Telegram 等境外应用的通知异常，APNs 由 Surge VIF 接管并固定进入 `Proxy`。它没有独立直连、专用 DNS 或 fallback；代理不可用时推送按设计失败，不会泄漏到真实出口。
 
 > [!IMPORTANT]
 > 公开模板不包含真实代理节点，也不在运行时加载节点订阅。未在私有副本的 `[Proxy]` 中加入已审核节点时，境外、未知和普通加密 DNS 会按设计失败，而不是改用 `DIRECT`。
@@ -48,6 +48,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/<40位审计提交>/Surge.conf
 ### 1.1 必须失败关闭
 
 - 境外服务和未分类目标。
+- Apple Push Notification service（APNs）。
 - Surge 自身的 DoH、DoH3、DoQ，以及已知公共 DNS、DoT 和 HTTPDNS。
 - 未知 IPv4 与 IPv6 目标。
 - 所有可识别 STUN、QUIC 和其余 UDP。
@@ -58,7 +59,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/<40位审计提交>/Surge.conf
 ### 1.2 明确允许
 
 - `Domestic` 中逐条内联的国内目标。
-- `Apple` 中逐条内联的 Apple 目标和已审核 Apple 网段。
+- `Apple` 中逐条内联的非 APNs Apple 目标；APNs 域名与官方网段被更早的规则固定送往 `Proxy`。
 - RFC1918、回环、链路本地、IPv6 ULA 和 `.local`，作为非互联网局域网例外。
 - `sub.store = 127.0.0.1` 与精确的 `DOMAIN,sub.store,DIRECT` 成对锁定，只允许请求到本机回环地址，防止域名被交给远端代理解析。
 - `dns-server = 223.5.5.5` 仅作为 Surge 传统 DNS 连通性探测；业务解析使用加密 DNS。它是已记录的探测元数据例外，不是加密 DNS 失败后的业务回退。
@@ -69,7 +70,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/<40位审计提交>/Surge.conf
 - `100.64.0.0/10`。
 - `.lan`。
 - `p.to`、`miwifi.com`、`tplogin.cn`、`router.asus.com`。
-- 所有 APNs 专用直连、专用 DoH 和 fallback。
+- 所有 APNs 专用直连、专用 DoH 和 fallback；APNs 只保留代理路径。
 
 ## 2. 策略闭环
 
@@ -91,7 +92,7 @@ Auto / AllServer / 地区组
 - `Proxy`、`Auto`、地区组和所有境外服务组都不能到达 `DIRECT`。
 - `AllServer` 只通过 `include-all-proxies=1` 纳入本地 `[Proxy]`，没有 `policy-path`。
 - `Fail-Closed = http, 127.0.0.1, 1` 是确定不可达的失败哨兵。
-- `Domestic` 与 `Apple` 是仅有的可手动选择直连策略组。
+- `Domestic` 与 `Apple` 是仅有的可手动选择直连策略组；APNs 规则不使用 `Apple`，因此不能随它切换到直连。
 - 自定义 `direct` 代理别名被审计器禁止。
 
 ## 3. DNS 与 DoH
@@ -129,13 +130,16 @@ hijack-dns = *:53
 
 ## 5. Apple 与 APNs
 
-APNs 不再有独立策略：
+APNs 使用独立的规则边界，但不创建可回落直连的策略组：
 
-- 保留 `include-apns=true`，确保系统将 APNs 流量交给 Surge VIF。
-- 已审核的 APNs 域名和 Apple IPv4/IPv6 网段直接绑定 `Apple`。
-- 没有 `APNs Direct`、`APNs Proxy`、`Apple Push` 或 APNs 专用 DNS。
-- 当 `Apple` 选择 `DIRECT` 时，它与其他 Apple 目标一样直连；选择 `Proxy` 时统一代理。
-- UDP 总守卫先于 Apple 规则，因此 Apple/APNs UDP 仍必须代理或失败。
+- `include-all-networks=true` 与 `include-apns=true` 确保 Surge VIF 接管 Wi-Fi 和蜂窝网络上的 APNs 流量。
+- `*.push.apple.com`、APNs 的 Akamai CNAME 特征和 Apple 官方公布的 5 个 IPv4、4 个 IPv6 网段全部固定绑定 `Proxy`。
+- 帖子中的 `DOMAIN-SUFFIX,akadns.net` 会覆盖大量无关 Akamai 服务，本配置收窄为 `DOMAIN-KEYWORD,push-apple.com.akadns.net`；官方网段仍完整保留。
+- APNs 在 TCP 5223 建立持久连接，必要时回落 TCP 443。443 上的推送主机保持 raw TCP，避免协议嗅探干扰；这不改变策略选择。
+- 没有 `APNs Direct`、`APNs Proxy`、`Apple Push`、APNs 专用 DNS 或直连 fallback。真实代理不可用时推送失败，这是严格闭锁的预期行为。
+- 普通 Apple 流量仍由 `Apple` 决定；即使 `Apple` 选择 `DIRECT`，更早命中的 APNs 规则仍只走代理。
+
+导入或更新后应开关一次飞行模式，强制断开并重新建立 APNs 长连接。之后分别在 Wi-Fi 与蜂窝网络锁屏测试 Telegram 通知，并在 Surge 请求记录中确认 APNs 目标命中 `Proxy`。社区方案只能改善网络路径，不能保证 Telegram/Apple 服务端、系统通知权限或专注模式造成的问题。
 
 ## 6. 局域网与控制面
 
@@ -170,6 +174,8 @@ gateway-restricted-to-lan = true
 
 `sub.store = 127.0.0.1` 与精确本机直连规则共同防止模块失效时请求落到不受控公共域名，但不能固定已安装模块的脚本代码。严格部署完成静态导出后，应停用或卸载标准 Sub-Store 模块；如果继续保留，必须单独审核模块版本、脚本 URL、定时任务、CORS、MITM 证书和所有订阅操作。
 
+`AllServer` 上方保留“Sub-Store 转换订阅地址填写处”的文字注释，便于识别私人副本的订阅来源；它只是注释，主配置仍不包含或启用 `policy-path`。
+
 主配置的静态检查不能证明设备上另外安装的模块、脚本、证书或网络扩展安全。
 
 ## 8. 远程规则供应链
@@ -199,7 +205,7 @@ python3 tools/test_audit_config.py
 ```text
 PASS: Surge.conf | groups=31 rules=320 remote_rules=22 direct_groups=Apple,Domestic
 PASS: Rules | files=32 active_entries=132575 target=Surge-iOS runtime_files=22 runtime_entries=8115
-PASS: audit_config regression cases=17
+PASS: audit_config regression cases=22
 ```
 
 `.github/workflows/audit.yml` 会在每次 push、pull request 和手动触发时重复这些检查。现有 ZIP 工作流只负责安全暂存和审计手动候选包。
@@ -210,7 +216,7 @@ PASS: audit_config regression cases=17
 - 自定义 `direct`、外部代理程序、未批准协议、明文 HTTP/SOCKS 代理和弱 Shadowsocks 加密。
 - 域名形式的代理服务器端点。
 - 越界端口、策略组循环和关闭或削弱 TLS 证书验证。
-- APNs 专用策略、专用 Host 和直连 DoH 例外。
+- APNs 直连/fallback 策略、专用 Host、直连 DoH、错误策略绑定，以及过宽的整个 `akadns.net` 匹配。
 - 远程直连规则、非固定提交规则 URL。
 - 运行时规则快照哈希或已审核直连域名集合发生变化。
 - 缺失或顺序错误的 DNS、STUN、QUIC、UDP 和 FINAL 守卫。
@@ -228,7 +234,7 @@ PASS: audit_config regression cases=17
 - STUN、QUIC 和其他 UDP 只显示代理出口或失败。
 - 代理不支持 UDP 时请求被拒绝。
 - 阻断 GitHub/jsDelivr 后，远程规则失败不扩大直连。
-- `Domestic` 与 `Apple` 的当前手动选择符合预期。
+- `Domestic` 与 `Apple` 的当前手动选择符合预期；APNs 域名和官方网段无论 `Apple` 如何选择都命中 `Proxy`。
 - 局域网必要设备仍可访问，CGNAT和公开路由器域名不再自动直连。
 - 其他设备无法连接本机代理、API 或面板。
 - 请求日志中没有未审核模块、脚本、额外 DNS 或外部策略订阅。
@@ -256,4 +262,6 @@ PASS: audit_config regression cases=17
 - [Surge 策略包含](https://manual.nssurge.com/policy-group/policy-including.html)
 - [Surge 规则集](https://manual.nssurge.com/rule/ruleset.html)
 - [Surge General 选项](https://manual.nssurge.com/others/misc-options.html)
+- [Apple APNs 网络要求](https://support.apple.com/zh-cn/102266)
+- [NodeSeek APNs 推送讨论存档](https://web.archive.org/web/20260715022631/https://www.nodeseek.com/post-709310-1)
 - [Sub-Store 官方仓库](https://github.com/sub-store-org/Sub-Store)
