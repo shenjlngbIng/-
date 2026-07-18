@@ -43,8 +43,18 @@ def main() -> int:
     cases = {
         "runtime policy subscription": replace_once(
             baseline,
-            "include-all-proxies=1, policy-regex-filter=",
-            "include-all-proxies=1, policy-path=https://example.com/nodes, policy-regex-filter=",
+            "policy-path=此处填入Sub-Store转换后的订阅链接",
+            "policy-path=https://example.com/nodes",
+        ),
+        "Sub-Store placeholder comment removed": replace_once(
+            baseline,
+            "# 【Sub-Store 转换订阅地址填写处】将下方 policy-path 的占位文字替换为 Sub-Store 转换后的订阅链接\n",
+            "",
+        ),
+        "Sub-Store policy-path placeholder removed": replace_once(
+            baseline,
+            ", policy-path=此处填入Sub-Store转换后的订阅链接, update-interval=86400",
+            "",
         ),
         "renamed direct policy": replace_once(
             baseline,
@@ -56,10 +66,30 @@ def main() -> int:
             "Fail-Closed = http, 127.0.0.1, 1\n",
             "Fail-Closed = http, 127.0.0.1, 1\nNode = ss, example.com, 443, encrypt-method=aes-128-gcm, password=test\n",
         ),
-        "obsolete APNs group": replace_once(
+        "APNs direct fallback policy": replace_once(
             baseline,
             "[Rule]\n",
             "Apple Push = select, DIRECT\n\n[Rule]\n",
+        ),
+        "APNs domain direct regression": replace_once(
+            baseline,
+            "DOMAIN-SUFFIX,push.apple.com,Proxy",
+            "DOMAIN-SUFFIX,push.apple.com,Apple",
+        ),
+        "APNs IPv6 direct regression": replace_once(
+            baseline,
+            "IP-CIDR6,2620:149:a44::/48,Proxy,no-resolve",
+            "IP-CIDR6,2620:149:a44::/48,Apple,no-resolve",
+        ),
+        "overbroad APNs Akamai match": replace_once(
+            baseline,
+            "DOMAIN-SUFFIX,push.apple.com,Proxy",
+            "DOMAIN-SUFFIX,akadns.net,Proxy\nDOMAIN-SUFFIX,push.apple.com,Proxy",
+        ),
+        "APNs raw TCP exception removed": replace_once(
+            baseline,
+            "always-raw-tcp-hosts = 149.154.*, 91.108.*, *.push.apple.com:443, *push-apple.com.akadns.net:443, *.apple.com.edgekey.net:443",
+            "always-raw-tcp-hosts = 149.154.*, 91.108.*",
         ),
         "UDP direct fallback": replace_once(
             baseline,
