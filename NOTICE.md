@@ -14,7 +14,7 @@
 - 主要文档：`README.md`、`NOTICE.md`
 - 目标平台：Surge iOS
 
-本项目在公开配置基础上进行了大幅重组与安全加固，包括策略闭环、规则顺序、DNS/DoH、IPv4/IPv6、UDP/QUIC/STUN、APNs 强制代理边界、控制面收缩、静态节点约束、远程规则固定提交、只读候选包验证及静态检查。
+本项目在公开配置基础上进行了大幅重组与安全加固，包括策略闭环、规则顺序、DNS/DoH、IPv4/IPv6、UDP/QUIC/STUN、APNs 强制代理边界、控制面收缩、节点启动约束、规则快照内嵌、只读候选包验证及静态检查。
 
 公开模板不包含真实代理节点，也不应包含可用的节点订阅 URL、Token、用户名、密码、私钥、控制器密钥、设备标识或带签名参数的临时 URL。`AllServer` 中的中文 `policy-path` 只是不可用的填写占位值；使用者应只在本地私有副本中加入自己的节点或真实链接。
 
@@ -25,8 +25,8 @@
 - 只有经审核并内联的国内、Apple 和非互联网局域网目标可以到达直连。
 - APNs 不使用直连回退或专用 DNS；已审核域名和官方网段固定进入 `Proxy`，不受 `Apple` 的直连选择影响。
 - 境外、未知、普通加密 DNS、STUN、QUIC 和所有其他 UDP 不因故障回落直连。
-- 运行时远程规则只能选择代理或拒绝策略，不能扩大直连集合。
-- 远程规则 URL 固定到 40 位完整提交。
+- 22 个运行时规则集已内嵌到主配置，只能选择代理或拒绝策略，不能扩大直连集合。
+- 主配置没有外部规则 URL；GitHub 与 jsDelivr 不再处于设备规则启动链。
 - 公开主配置只有不可用的节点订阅文字占位值，不包含真实 URL；未替换时外部策略更新失败。主配置不执行第三方脚本，不启用 MITM 或 URL Rewrite；设备另装模块属于必须单独审核的边界。
 - Wi-Fi/热点代理共享、HTTP API、外部控制器和 Web 面板均未开放。
 - 配置保留 Surge iOS 兼容的轻量 HTTP 健康/延迟检测，但不主动执行带宽测速，也不包含独立带宽测速策略组。
@@ -106,7 +106,7 @@ https://cdn.jsdelivr.net/gh/Coldvvater/Mononoke@e8bee09b64c2f6baaa3056ed8de61c74
 - 上游许可：除上游特别注明的 `List/ip/china_ip.conf` 外，SukkaW/Surge 仓库声明为 AGPL-3.0；特例文件以其单独声明为准。
 - 本项目文件：`Rules/Ads_SukkaW_Domain.list`、`Rules/Ads_SukkaW_Extra.list`
 
-`Ads_SukkaW_Domain.list` 的文件头保留 SukkaW 来源、生成信息和聚合上游说明。`Ads_SukkaW_Extra.list` 的文件头说明其从 SukkaW 广告规则中的非域名规则处理得到，当前由主配置作为 `AdBlock` 远程规则加载。
+`Ads_SukkaW_Domain.list` 的文件头保留 SukkaW 来源、生成信息和聚合上游说明。`Ads_SukkaW_Extra.list` 的文件头说明其从 SukkaW 广告规则中的非域名规则处理得到，当前以固定快照内嵌到主配置并绑定 `AdBlock`。
 
 本项目对相关内容进行过格式筛选、拆分、去重或适配 Surge `RULE-SET` 的处理。本轮 Surge iOS 候选快照还删除了 3 条宽泛 `URL-REGEX`：当前配置不启用 MITM，路径级 HTTPS 匹配不能作为可靠边界。继续公开分发或修改时，应核对并履行 AGPL-3.0 的许可证保留、修改说明、对应源代码提供及其他适用义务。
 
@@ -150,15 +150,15 @@ GPL v2 副本：`THIRD_PARTY_LICENSES/blackmatrix7-GPL-2.0.txt`
 
 ## 6. 本仓库自托管规则快照
 
-### 6.1 运行时固定来源
+### 6.1 内嵌方式
 
-主配置当前通过以下固定前缀加载本仓库规则：
+主配置当前不通过网络加载规则。经审核的 22 个 `Rules/*.list` 文件由 `tools/embed_runtime_rules.py` 生成 `[Ruleset RS_*]` 段，并直接写入 `Surge.conf`。历史固定提交为：
 
 ```text
-https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd430/Rules/
+8099f3036f0f1ebde038abff98cbaec9409cd430
 ```
 
-固定提交只用于限制内容静默变化和提高可复现性，不改变文件原作者、版权或许可证。通过本仓库或 jsDelivr 下载不代表规则全部由本仓库维护者原创，也不代表 CDN 对规则进行安全或许可审查。
+固定提交只用于记录审计来源和提高可复现性，不改变文件原作者、版权或许可证。内嵌也不代表规则全部由本仓库维护者原创，不能消除上游许可、署名和修改说明义务。
 
 ### 6.2 当前启用的 22 个文件
 
@@ -171,11 +171,11 @@ https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd
 | 社交 | `Twitter.list` |
 | 游戏 | `Game.list` |
 
-这些文件只会选择代理或拒绝策略。下载失败时 Surge 可能使用有效缓存、报告错误或无法启用配置；只要配置仍在运行，未命中的流量最终进入 `Final -> Proxy`，规则文件本身没有授予直连的能力。
+这些文件只会选择代理或拒绝策略。设备无需下载它们；未命中的流量最终进入 `Final -> Proxy`，规则内容本身没有授予直连的能力。
 
 ### 6.3 Surge iOS 本地修改与能力过滤
 
-当前 22 个运行时固定文件共有 8115 条有效项；完整 `Rules/` 目录共有 32 个文件、132575 条有效项。本轮本地修改包括：
+当前 22 个内嵌源文件共有 8115 条有效项；完整 `Rules/` 目录共有 32 个文件、132575 条有效项。本轮本地修改包括：
 
 - 从 6 个活动文件删除 21 条 `PROCESS-NAME`。其中包含 macOS 可执行文件名和 Android 包名；Surge iOS 会忽略该规则类型。
 - 从 `Ads_SukkaW_Extra.list` 删除 3 条宽泛 `URL-REGEX`。本配置没有 MITM，不把 URL 路径匹配视为可靠的移动端过滤边界。
@@ -185,7 +185,7 @@ https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd
 
 这些属于平台适配和本地删改，不改变上游权利归属，也不把删改后的文件变成本项目独立原创。
 
-本轮已按两阶段流程完成候选规则提交核对，并将 `Surge.conf` 与 `tools/audit_config.py` 的固定前缀同步指向提交 `8099f3036f0f1ebde038abff98cbaec9409cd430`。该提交中的 22 个规则文件已逐一核对，内容与本地审核版本一致，并由 `tools/audit_rules.py` 固定检查 SHA-256；后续更新仍不得改用 `main`、`master` 或 `release`，内容变化必须先审核并显式更新哈希清单。
+本轮已按两阶段流程完成候选规则核对。提交 `8099f3036f0f1ebde038abff98cbaec9409cd430` 中的 22 个规则文件与当前内嵌源一致；`tools/audit_rules.py` 固定检查源文件 SHA-256，`tools/audit_config.py` 另行固定检查每个内嵌段的名称、数量和标准化 SHA-256。后续内容变化必须先审核、重新生成主配置并显式更新两处哈希清单。
 
 ### 6.4 当前未启用的 10 个快照
 
@@ -289,37 +289,35 @@ https://cdn.jsdelivr.net/gh/shenjlngbIng/-@8099f3036f0f1ebde038abff98cbaec9409cd
 
 ## 9. 网络服务与供应链
 
-### 9.1 GitHub 与 jsDelivr
+### 9.1 GitHub 与规则分发
 
-本项目使用 GitHub 托管代码，并通过 jsDelivr 分发固定提交下的规则文件：
+本项目使用 GitHub 托管代码；jsDelivr 仅保留在历史来源记录和部分上游链接中：
 
 - GitHub：<https://github.com/>
 - jsDelivr：<https://www.jsdelivr.com/>
 
-固定提交能够减少路径内容静默变化，但仍依赖：
+设备加载主配置后不再向 GitHub 或 jsDelivr 请求 22 个规则文件。源码维护与配置更新仍依赖：
 
 - GitHub 仓库和账户完整性。
-- jsDelivr 的回源、缓存和可用性。
 - TLS、系统信任库和证书链。
-- Surge 对远程规则的下载、缓存和解析行为。
-- 本仓库固定提交本身是否经过正确审核。
+- GitHub 仓库、账户和提交本身是否经过正确审核。
+- Surge 对主配置中 Inline Ruleset 的解析行为。
 
 CDN 不改变文件许可证，也不证明内容安全、准确、合法或及时。
 
-### 9.2 远程规则的权限限制
+### 9.2 内嵌规则的权限限制
 
-当前 22 个远程 `RULE-SET` 只能进入代理或拒绝策略。这一设计把供应链风险限制为误代理、误拒绝或漏匹配；未命中目标仍由 `FINAL` 进入代理。它不能防止：
+当前 22 个内嵌 `RULE-SET` 只能进入代理或拒绝策略。这一设计把供应链风险限制为误代理、误拒绝或漏匹配；未命中目标仍由 `FINAL` 进入代理。它不能防止：
 
 - 恶意规则导致大范围拒绝服务。
 - 规则把某些服务错误送往错误的代理地区。
-- CDN 或网络观察者获知规则下载时间和客户端出口。
 - 规则文件的许可证或来源争议。
 
 ### 9.3 Sub-Store 与设备模块
 
 主配置将 `sub.store = 127.0.0.1` 与精确的本机直连规则成对锁定，用于防止 Sub-Store 的模块域名在重写或模块失效时被发送到远端代理或不受本项目控制的公共域名。该本机例外不代表本仓库分发、固定或审核了设备上已经安装的 Sub-Store 模块。
 
-标准 Sub-Store 模块会引入 MITM、远程脚本、可选定时任务和订阅处理能力。严格部署优先在私有环境离线生成节点候选，经类型、端点、协议和证书参数审核后静态写入 `[Proxy]`。公开模板在 `AllServer` 中仅保留 `policy-path=此处填入Sub-Store转换后的订阅链接` 的不可用文字占位值；若在私有副本中替换成真实 URL，使用者将额外信任模块来源、脚本发布、MITM 证书、前端、订阅提供者、订阅可用性及自己配置的所有脚本操作，且真实 URL/Token 不得回传公开仓库。
+标准 Sub-Store 模块会引入 MITM、远程脚本、可选定时任务和订阅处理能力。公开模板在 `AllServer` 中仅保留 `policy-path=此处填入Sub-Store转换后的订阅链接` 的不可用文字占位值。零静态节点首次启动时，私有真实 URL 必须显式追加 `proxy=DIRECT`；该参数仅授权 Sub-Store 的上游订阅请求直接发出，但会向订阅提供者暴露用户真实出口 IP。若不接受这一控制面例外，应先静态加入经审核启动节点，并把 `proxy=` 指向该节点或策略。指定策略依赖支持 `http-client-policy` ability 的模块版本。真实 URL/Token 不得回传公开仓库。
 
 Sub-Store 官方项目：<https://github.com/sub-store-org/Sub-Store>
 
@@ -351,7 +349,7 @@ Sub-Store 官方项目：<https://github.com/sub-store-org/Sub-Store>
 | 传统 DNS 连通性检查目标 | 探测时间、源 IP 和基础 DNS 元数据 | 用户真实出口或平台实际控制路径 |
 | 代理服务商 | 目标地址、时间、流量大小等连接元数据；加密内容可见性取决于协议 | 用户真实入口 |
 | 最终网站或应用服务 | 代理流量看到代理出口；直连流量看到真实出口 | 取决于策略 |
-| GitHub/jsDelivr | 规则请求、时间、User-Agent 和出口 IP | 通常为配置实际使用的出口 |
+| Sub-Store 上游订阅提供者 | 使用 `proxy=DIRECT` 冷启动时可见订阅请求、时间、User-Agent 和真实出口 IP | 用户真实出口 |
 | Apple 健康检测目标 | 连通性探测、时间和出口 IP | 基础网络或 Apple 当前策略路径 |
 | Google 健康检测目标 | 代理节点探测、时间和代理出口 IP | 被测代理出口 |
 | GitHub Actions | 候选包内容、日志和 artifact 元数据 | 托管运行环境 |
@@ -397,7 +395,7 @@ Sub-Store 官方项目：<https://github.com/sub-store-org/Sub-Store>
 - 配置始终可以在未来 Surge iOS 版本导入。
 - 所有流量、所有系统服务或所有 IPv6 都被完整接管。
 - 所有 DNS、HTTPDNS、DoH、WebRTC、STUN 或 IP 泄漏都能被阻止。
-- 代理节点、Apple/APNs、DNS、GitHub、jsDelivr 或健康检测目标始终可用。
+- 代理节点、Apple/APNs、DNS、GitHub、Sub-Store 或健康检测目标始终可用。
 - 规则没有误杀、漏匹配、过期地址或服务分类错误。
 - 节点提供者不记录、修改、出售或关联用户流量。
 - TLS 之外的连接元数据对本地网络、代理或目标不可见。
