@@ -5,7 +5,7 @@
 为处理中国内地网络下 Telegram 等境外应用的通知异常，APNs 由 Surge VIF 接管并固定进入 `Proxy`。它没有独立直连、专用 DNS 或 fallback；代理不可用时推送按设计失败，不会泄漏到真实出口。
 
 > [!IMPORTANT]
-> 公开模板不包含真实代理节点，也不在运行时加载节点订阅。未在私有副本的 `[Proxy]` 中加入已审核节点时，境外、未知和普通加密 DNS 会按设计失败，而不是改用 `DIRECT`。
+> 公开模板不包含真实代理节点或真实订阅 URL；`AllServer` 只保留一段必须由使用者替换的 `policy-path` 文字占位值。未替换时外部策略更新会失败；没有可用代理时，境外、未知和普通加密 DNS 会按设计失败，而不是改用 `DIRECT`。
 
 ## 当前审计状态
 
@@ -21,7 +21,7 @@
 | 运行时远程规则集 | 22 |
 | 固定规则快照 | 22 个文件、8115 条有效项 |
 | 可到达直连的策略组 | `Domestic`、`Apple` |
-| 运行时节点订阅 | 禁止 |
+| 运行时节点订阅 | 仅保留无效文字占位值；无真实 URL |
 | 主配置 MITM、脚本、Rewrite | 不包含 |
 | Wi-Fi/热点共享、HTTP API、Web 面板 | 未开放 |
 
@@ -90,7 +90,7 @@ Auto / AllServer / 地区组
 
 - `Final` 只有 `Proxy` 一个成员。
 - `Proxy`、`Auto`、地区组和所有境外服务组都不能到达 `DIRECT`。
-- `AllServer` 只通过 `include-all-proxies=1` 纳入本地 `[Proxy]`，没有 `policy-path`。
+- `AllServer` 通过 `include-all-proxies=1` 纳入本地 `[Proxy]`，并保留 `policy-path=此处填入Sub-Store转换后的订阅链接` 作为醒目的文字占位值；未替换时不会得到订阅节点。
 - `Fail-Closed = http, 127.0.0.1, 1` 是确定不可达的失败哨兵。
 - `Domestic` 与 `Apple` 是仅有的可手动选择直连策略组；APNs 规则不使用 `Apple`，因此不能随它切换到直连。
 - 自定义 `direct` 代理别名被审计器禁止。
@@ -159,22 +159,29 @@ gateway-restricted-to-lan = true
 
 ### 7.1 严格部署流程
 
-主配置刻意禁止运行时节点订阅。使用 Sub-Store 时应：
+公开模板刻意不写入真实订阅 URL。若要使用 `policy-path` 连接 Sub-Store 转换结果，应只在私有副本中：
 
 1. 在私有环境读取原订阅。
 2. 使用类型过滤排除 `Direct`、明文 HTTP/SOCKS、外部程序和不受支持协议。
 3. 把代理服务器域名解析为 IP；TLS 类节点必须继续保留正确 SNI/证书参数。
 4. 检查端口、密码字段、证书校验、UDP 能力和异常信息节点。
-5. 将审核结果静态写入私有副本的 `[Proxy]`。
-6. 重新运行本仓库全部审计，然后导入固定提交版本。
+5. 优先将审核结果静态写入私有副本的 `[Proxy]`；若确需运行时订阅，再把 `AllServer` 中的文字占位值替换为 Sub-Store 转换后的 Surge 订阅 URL。
+6. 确认订阅失效或返回异常内容时，策略仍只会进入可用代理或 `Fail-Closed`，不会出现 `DIRECT` 成员。
+7. 重新检查配置并在目标设备导入；公开模板审计器会有意拒绝真实 URL，以防凭据误提交。
 
-不要把订阅 Token 写入公开仓库，也不要恢复 `policy-path`。
+不要把订阅 URL、Token 或其他凭据写入公开仓库。文字占位值本身不是可用链接，未替换时 Surge 显示外部资源更新失败属于预期结果。
 
 ### 7.2 已安装模块的边界
 
 `sub.store = 127.0.0.1` 与精确本机直连规则共同防止模块失效时请求落到不受控公共域名，但不能固定已安装模块的脚本代码。严格部署完成静态导出后，应停用或卸载标准 Sub-Store 模块；如果继续保留，必须单独审核模块版本、脚本 URL、定时任务、CORS、MITM 证书和所有订阅操作。
 
-`AllServer` 上方保留“Sub-Store 转换订阅地址填写处”的文字注释，便于识别私人副本的订阅来源；它只是注释，主配置仍不包含或启用 `policy-path`。
+`AllServer` 上方有填写说明，实际文字占位符位于同一策略组行内：
+
+```ini
+policy-path=此处填入Sub-Store转换后的订阅链接
+```
+
+这里故意不是 URL。需要订阅时，只替换等号后的占位文字，不要删除其他失败关闭成员或过滤条件。
 
 主配置的静态检查不能证明设备上另外安装的模块、脚本、证书或网络扩展安全。
 
@@ -205,14 +212,14 @@ python3 tools/test_audit_config.py
 ```text
 PASS: Surge.conf | groups=31 rules=320 remote_rules=22 direct_groups=Apple,Domestic
 PASS: Rules | files=32 active_entries=132575 target=Surge-iOS runtime_files=22 runtime_entries=8115
-PASS: audit_config regression cases=22
+PASS: audit_config regression cases=23
 ```
 
 `.github/workflows/audit.yml` 会在每次 push、pull request 和手动触发时重复这些检查。现有 ZIP 工作流只负责安全暂存和审计手动候选包。
 
 配置审计器还会拒绝：
 
-- `policy-path`、托管 include 和未解析区段。
+- 除 `AllServer` 精确文字占位值外的任何 `policy-path`（包括意外提交的真实 URL）、托管 include 和未解析区段。
 - 自定义 `direct`、外部代理程序、未批准协议、明文 HTTP/SOCKS 代理和弱 Shadowsocks 加密。
 - 域名形式的代理服务器端点。
 - 越界端口、策略组循环和关闭或削弱 TLS 证书验证。
