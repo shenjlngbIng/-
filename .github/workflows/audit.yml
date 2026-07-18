@@ -1,0 +1,43 @@
+name: Audit Surge profile
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: surge-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Validate pinned metadata and Python sources
+        run: |
+          python3 -m json.tool Rules/upstreams.lock.json >/dev/null
+          python3 -m py_compile tools/*.py
+          python3 tools/update_service_rules.py --verify-lock
+
+      - name: Require reproducible embedded rules
+        run: |
+          python3 tools/embed_runtime_rules.py Surge.conf --check
+
+      - name: Audit profile and rule snapshots
+        run: |
+          python3 tools/audit_config.py Surge.conf
+          python3 tools/audit_rules.py Rules --profile Surge.conf
+
+      - name: Run regression checks
+        run: |
+          python3 tools/test_audit_config.py
+          python3 tools/test_stage_surge_zip.py
