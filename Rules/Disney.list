@@ -1,5 +1,12 @@
 # 规则名称: Disney
 # 规则统计: 172
+# 固定上游: blackmatrix7/ios_rule_script@c00517ce10760a93728b241923a451dfa617be80
+# 上游文件: rule/Surge/Disney/Disney.list
+# 上游 SHA-256: d0cfd6aee89d9d3075aef9dfadd98a2a3c6a2dba487f5091c801d1bcd70e9884
+# 上游声明 NAME: Disney
+# 上游声明 AUTHOR: blackmatrix7
+# 上游声明 REPO: https://github.com/blackmatrix7/ios_rule_script
+# 本地处理: 过滤 PROCESS-NAME、未审核新增 IP-ASN 和共享平台排除项；精确去重，域名优先、IP 后置。
 
 DOMAIN-SUFFIX,20thcenturystudios.com.au
 DOMAIN-SUFFIX,20thcenturystudios.com.br
@@ -129,7 +136,6 @@ DOMAIN-SUFFIX,espn.net
 DOMAIN-SUFFIX,espncdn.com
 DOMAIN-SUFFIX,espndotcom.tt.omtrdc.net
 DOMAIN-SUFFIX,espnqa.com
-DOMAIN-SUFFIX,execute-api.us-east-1.amazonaws.com
 DOMAIN-SUFFIX,go-disneyworldgo.com
 DOMAIN-SUFFIX,go.com
 DOMAIN-SUFFIX,hotstar-cdn.net
@@ -173,3 +179,4 @@ DOMAIN-SUFFIX,thewaltdisneycompany.com
 DOMAIN-SUFFIX,thisispolaris.com
 DOMAIN-SUFFIX,watchdisneyfe.com
 DOMAIN-SUFFIX,watchespn.com
+USER-AGENT,Disney+*

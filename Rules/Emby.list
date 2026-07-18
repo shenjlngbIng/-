@@ -1,11 +1,21 @@
 # 规则名称: Emby
-# 规则统计: 194
+# 规则统计: 218
+# 固定上游: blackmatrix7/ios_rule_script@c00517ce10760a93728b241923a451dfa617be80
+# 上游文件: rule/Surge/Emby/Emby.list
+# 上游 SHA-256: 48ae40d231b5429ef2c11459dd13b88c5ced78cee4dc964ce4e67291b8d59614
+# 上游声明 NAME: Emby
+# 上游声明 AUTHOR: justdoiting
+# 上游声明 REPO: https://github.com/justdoiting/emby-rules
+# 本地处理: 过滤 PROCESS-NAME、未审核新增 IP-ASN 和共享平台排除项；精确去重，域名优先、IP 后置。
 
 DOMAIN,cc.coemn.com
 DOMAIN,cdn1.nebula-media.org
 DOMAIN,cf-cdn1.nebula-media.org
 DOMAIN,emby-cdn1.nebula-media.org
+DOMAIN,emby.enjoyit.eu.org
+DOMAIN,emby.lcloud.wiki
 DOMAIN,emby.nebula-media.org
+DOMAIN,notnetflix.cos.cat
 DOMAIN,starharn-cf.nebula-media.org
 DOMAIN,starharn.nebula-media.org
 DOMAIN,web-starharn.nebula-media.org
@@ -27,11 +37,15 @@ DOMAIN-SUFFIX,91ai.de
 DOMAIN-SUFFIX,9521732.xyz
 DOMAIN-SUFFIX,acemby.org
 DOMAIN-SUFFIX,agahk.odysseyplus.site
+DOMAIN-SUFFIX,agahk1.jmsooo.com
+DOMAIN-SUFFIX,agajp1.jmsooo.com
 DOMAIN-SUFFIX,agan2.vip
 DOMAIN-SUFFIX,agasg.odysseyplus.site
+DOMAIN-SUFFIX,agasg1.jmsooo.com
 DOMAIN-SUFFIX,agon.cf
 DOMAIN-SUFFIX,alphatvapp.top
 DOMAIN-SUFFIX,as174.de
+DOMAIN-SUFFIX,aws.jmsooo.com
 DOMAIN-SUFFIX,az-hk.embyclub.com
 DOMAIN-SUFFIX,azsgp.embyclub.com
 DOMAIN-SUFFIX,baisi.pro
@@ -47,11 +61,13 @@ DOMAIN-SUFFIX,catlinks.co.uk
 DOMAIN-SUFFIX,cc.ccemby.tk
 DOMAIN-SUFFIX,cc.semby.ink
 DOMAIN-SUFFIX,cf.odysseyplus.site
+DOMAIN-SUFFIX,cf1.jmsooo.com
 DOMAIN-SUFFIX,charontv.com
 DOMAIN-SUFFIX,cherrytv.one
 DOMAIN-SUFFIX,ciallo.party
 DOMAIN-SUFFIX,cinema.facmata.net
 DOMAIN-SUFFIX,cn2gias.uk
+DOMAIN-SUFFIX,cristiamo.xyz
 DOMAIN-SUFFIX,deja-vu.beauty
 DOMAIN-SUFFIX,dicarerhome.com
 DOMAIN-SUFFIX,e.degyax.one
@@ -62,15 +78,20 @@ DOMAIN-SUFFIX,emby-sg.plusmedia.site
 DOMAIN-SUFFIX,emby.aiyowei.ml
 DOMAIN-SUFFIX,emby.bid
 DOMAIN-SUFFIX,emby.cjpc.cc
+DOMAIN-SUFFIX,emby.cjpc.tv
+DOMAIN-SUFFIX,emby.cjpc.xyz
 DOMAIN-SUFFIX,emby.cl
+DOMAIN-SUFFIX,emby.cristiamo.top
 DOMAIN-SUFFIX,emby.date
 DOMAIN-SUFFIX,emby.eu.org
 DOMAIN-SUFFIX,emby.flowercloud
+DOMAIN-SUFFIX,emby.flowercloud.yt
 DOMAIN-SUFFIX,emby.immtel.com
 DOMAIN-SUFFIX,emby.kim
 DOMAIN-SUFFIX,emby.lcloud.wiki
 DOMAIN-SUFFIX,emby.loan
 DOMAIN-SUFFIX,emby.maying.club
+DOMAIN-SUFFIX,emby.mcwy.me
 DOMAIN-SUFFIX,emby.mdss.cloud
 DOMAIN-SUFFIX,emby.ml
 DOMAIN-SUFFIX,emby.moe
@@ -79,6 +100,7 @@ DOMAIN-SUFFIX,emby.nexitally.com
 DOMAIN-SUFFIX,emby.nyancat.net
 DOMAIN-SUFFIX,emby.ok.edu.hk
 DOMAIN-SUFFIX,emby.otakudrive.life
+DOMAIN-SUFFIX,emby.paoche.ooo
 DOMAIN-SUFFIX,emby.plusmedia.site
 DOMAIN-SUFFIX,emby.pro
 DOMAIN-SUFFIX,emby.prprcloud.com
@@ -111,11 +133,13 @@ DOMAIN-SUFFIX,gtlx.org
 DOMAIN-SUFFIX,gugumedia.link
 DOMAIN-SUFFIX,happyav.eu.org
 DOMAIN-SUFFIX,hgemby.qzz.io
+DOMAIN-SUFFIX,hinet.jmsooo.com
 DOMAIN-SUFFIX,hovervan.org
 DOMAIN-SUFFIX,i109.com
 DOMAIN-SUFFIX,ii00.cc
 DOMAIN-SUFFIX,imetyou.top
 DOMAIN-SUFFIX,infinityfly.top
+DOMAIN-SUFFIX,jellyfin.asia
 DOMAIN-SUFFIX,jellyfin.xeton.dev
 DOMAIN-SUFFIX,ju.dog
 DOMAIN-SUFFIX,line.emby.men
@@ -125,6 +149,7 @@ DOMAIN-SUFFIX,lyrebirdemby.com
 DOMAIN-SUFFIX,magpie.cyou
 DOMAIN-SUFFIX,magpiecdn.tech
 DOMAIN-SUFFIX,mcjoker.xyz
+DOMAIN-SUFFIX,mickeycloud.com
 DOMAIN-SUFFIX,misty.ltd
 DOMAIN-SUFFIX,mius.uk
 DOMAIN-SUFFIX,mjjemby.org
@@ -137,13 +162,16 @@ DOMAIN-SUFFIX,newwan.top
 DOMAIN-SUFFIX,nijigem.by
 DOMAIN-SUFFIX,nivod4.tv
 DOMAIN-SUFFIX,ntrrr.am.sb
+DOMAIN-SUFFIX,ntt1.jmsooo.com
 DOMAIN-SUFFIX,nvidia.rip
 DOMAIN-SUFFIX,ohhhh.org
 DOMAIN-SUFFIX,onyra.cc
 DOMAIN-SUFFIX,ouonet.org
+DOMAIN-SUFFIX,peachmv.me
 DOMAIN-SUFFIX,pilipili.club
 DOMAIN-SUFFIX,pilipiliultra.com
 DOMAIN-SUFFIX,pilipiliultra.top
+DOMAIN-SUFFIX,plusmedia.site
 DOMAIN-SUFFIX,poloemby.xyz
 DOMAIN-SUFFIX,pololine.ml
 DOMAIN-SUFFIX,pornemby.club
@@ -186,6 +214,9 @@ DOMAIN-SUFFIX,zabc.net
 DOMAIN-SUFFIX,zi0.icu
 DOMAIN-SUFFIX,zn.al
 DOMAIN-SUFFIX,zox.show
+DOMAIN-KEYWORD,emby.wtf
+DOMAIN-KEYWORD,jmsooo
+DOMAIN-KEYWORD,odysseyplus
 IP-CIDR,152.53.67.239/32,no-resolve
 IP-CIDR,168.119.137.205/32,no-resolve
 IP-CIDR,188.172.228.49/32,no-resolve
