@@ -11,7 +11,7 @@ from pathlib import Path
 
 SERVICE_LAYOUT = [
     (
-        "# 小型广告补充；大型 Reject 与 SukkaW 域名表默认不加载",
+        "# 广告补充",
         [("Ads_Custom_Extra.list", "AdBlock")],
     ),
     (
@@ -23,7 +23,7 @@ SERVICE_LAYOUT = [
         ],
     ),
     (
-        "# 流媒体与服务",
+        "# 流媒体",
         [
             ("YouTube.list", "YouTube"),
             ("Netflix.list", "NETFLIX"),
@@ -40,7 +40,7 @@ SERVICE_LAYOUT = [
     ),
     ("# Telegram", [("Telegram.list", "Telegram")]),
     (
-        "# 其他境外服务",
+        "# 境外服务",
         [
             ("Github.list", "GitHub"),
             ("Twitter.list", "X"),
@@ -52,9 +52,9 @@ SERVICE_LAYOUT = [
     ),
 ]
 SERVICE_START = SERVICE_LAYOUT[0][0]
-SERVICE_END = "# 服务专用策略之后、所有互联网直连之前封闭 UDP；不支持 UDP 的节点直接拒绝"
-DIRECT_START = "# 直连敏感规则固定内嵌，避免远程更新把未知流量引入 DIRECT"
-DIRECT_END = "# 境外、未知、未解析成功的 IPv4/IPv6 最终均进入 Proxy"
+SERVICE_END = "# UDP/STUN/QUIC：代理，失败拒绝"
+DIRECT_START = "# 直连白名单（固定快照）"
+DIRECT_END = "# 兜底：境外/未知/解析失败走代理"
 
 DIRECT_EXTRA_ALLOW = {
     "DOMAIN,fairplay.l.qq.com",
@@ -107,7 +107,7 @@ def lock_data(root: Path) -> tuple[str, dict[str, dict[str, object]]]:
 
 
 def build_service_block(root: Path) -> list[str]:
-    commit, locked = lock_data(root)
+    _, locked = lock_data(root)
     seen: set[str] = set()
     output: list[str] = []
     for group_index, (heading, items) in enumerate(SERVICE_LAYOUT):
@@ -129,16 +129,14 @@ def build_service_block(root: Path) -> list[str]:
                 raise ValueError(f"locked policy mismatch for {filename}")
             if item.get("active_entries") != len(source) or item.get("embedded_entries") != len(kept):
                 raise ValueError(f"locked count mismatch for {filename}")
-            output.append(
-                f"# 内嵌 {filename}: {len(kept)}/{len(source)} 条，策略 {policy}，来源提交 {commit}"
-            )
+            output.append(f"# {filename} · {len(kept)}/{len(source)} · {policy}")
             output.extend(add_policy(rule, policy) for rule in kept)
     output.append("")
     return output
 
 
 def build_direct_block(root: Path) -> list[str]:
-    commit, locked = lock_data(root)
+    _, locked = lock_data(root)
     apple = active_rules(root, "AppleCN.list")
     wechat = [
         rule
@@ -171,16 +169,16 @@ def build_direct_block(root: Path) -> list[str]:
 
     return [
         DIRECT_START,
-        f"# AppleCN: {len(apple)} 条，来源提交 {commit}",
+        f"# AppleCN · {len(apple)} · Apple",
         *[add_policy(rule, "Apple") for rule in apple],
         "",
-        f"# WeChat: {len(wechat)} 条；删除 2 条 USER-AGENT 与 1 条宽泛 IP-ASN",
+        f"# WeChat · {len(wechat)} · Domestic（剔除宽泛 UA/ASN）",
         *[add_policy(rule, "Domestic") for rule in wechat],
         "",
-        f"# Direct 精选: {len(direct)} 条；仅保留明确国内目标",
+        f"# Direct · {len(direct)} · Domestic（精选）",
         *[add_policy(rule, "Domestic") for rule in direct],
         "",
-        f"# ChinaDomain: {len(china)} 条；另删除 3 条 USER-AGENT、13 条 DNS 服务域名与 4 条重复规则",
+        f"# ChinaDomain · {len(china)} · Domestic（剔除宽泛/敏感项）",
         *[add_policy(rule, "Domestic") for rule in china],
         "",
     ]

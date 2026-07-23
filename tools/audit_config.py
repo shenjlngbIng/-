@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PROFILE = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / "Surge.conf"
 REPO = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else PROFILE.parent
 PIN = "541641b64bf57ba83ccb9df6c59bd15b447ac265"
+SUBSCRIPTION_NOTE = "# 【订阅地址填写处】将下一行占位链接替换为 Sub-Store 转换后的订阅链接"
+PUBLIC_POLICY_PATH = "https://example.invalid/REPLACE_WITH_SUB_STORE_URL"
 
 
 def fail(message: str) -> None:
@@ -135,14 +137,37 @@ for unsafe in ("skip-cert-verify=true", "sni=off", "= direct", "= reject", "poli
 groups = kv(sections["Proxy Group"], "Proxy Group")
 if len(groups) != 30:
     fail(f"expected 30 policy groups, got {len(groups)}")
+group_lines = [line.strip() for line in sections["Proxy Group"]]
+if group_lines.count(SUBSCRIPTION_NOTE) != 1:
+    fail("Sub-Store subscription location note is missing or duplicated")
+note_index = group_lines.index(SUBSCRIPTION_NOTE)
+all_server_index = next(
+    (index for index, line in enumerate(group_lines) if line.startswith("AllServer =")),
+    None,
+)
+if all_server_index is None or all_server_index - note_index != 1:
+    fail("Sub-Store subscription location note must be directly above AllServer")
 if groups.get("Final") != "select, Proxy, no-alert=0, hidden=0, include-all-proxies=0":
     fail("Final group is not a single Proxy path")
 if "DIRECT" in groups["Proxy"].split(","):
     fail("Proxy group contains DIRECT")
-if any("policy-path=" in value for value in groups.values()):
-    fail("dynamic policy-path is forbidden in strict mode")
+policy_path_groups = {
+    name
+    for name, value in groups.items()
+    if re.search(r"(?:^|,)\s*policy-path\s*=", value)
+}
+if policy_path_groups != {"AllServer"}:
+    fail(f"policy-path must appear only in AllServer: {sorted(policy_path_groups)}")
+all_server_fields = [field.strip() for field in groups["AllServer"].split(",")]
+policy_path_fields = [
+    field for field in all_server_fields if re.match(r"^policy-path\s*=", field)
+]
+if policy_path_fields != [f"policy-path={PUBLIC_POLICY_PATH}"]:
+    fail("public AllServer must contain exactly one non-routable policy-path placeholder")
+if all_server_fields.count("update-interval=86400") != 1:
+    fail("AllServer policy-path must use update-interval=86400")
 if "include-all-proxies=1" not in groups["AllServer"]:
-    fail("AllServer must include only locally audited [Proxy] entries")
+    fail("AllServer must retain locally audited [Proxy] entries")
 
 region_names = ["HongKong", "TaiWan", "Japan", "Singapore", "America"]
 for name in region_names:

@@ -12,6 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE = ROOT / "Surge.conf"
 AUDITOR = ROOT / "tools" / "audit_config.py"
+SUBSCRIPTION_NOTE = "# 【订阅地址填写处】将下一行占位链接替换为 Sub-Store 转换后的订阅链接"
+PUBLIC_POLICY_PATH = "https://example.invalid/REPLACE_WITH_SUB_STORE_URL"
 
 
 def replace_once(source: str, old: str, new: str) -> str:
@@ -29,15 +31,30 @@ def swap_once(source: str, first: str, second: str) -> str:
 
 baseline = PROFILE.read_text(encoding="utf-8")
 cases = {
+    "subscription note removed": replace_once(
+        baseline,
+        SUBSCRIPTION_NOTE,
+        "# Sub-Store",
+    ),
     "final direct fallback": replace_once(
         baseline,
         "Final = select, Proxy, no-alert=0, hidden=0, include-all-proxies=0",
         "Final = select, DIRECT, Proxy, no-alert=0, hidden=0, include-all-proxies=0",
     ),
-    "dynamic policy path": replace_once(
+    "duplicate policy path": replace_once(
         baseline,
         "AllServer = select, Fail-Closed,",
         "AllServer = select, Fail-Closed, policy-path=https://example.com/nodes,",
+    ),
+    "public subscription leak": replace_once(
+        baseline,
+        PUBLIC_POLICY_PATH,
+        "https://example.com/private-subscription-token",
+    ),
+    "policy path removed": replace_once(
+        baseline,
+        f"policy-path={PUBLIC_POLICY_PATH}, ",
+        "",
     ),
     "renamed direct proxy": replace_once(
         baseline,
