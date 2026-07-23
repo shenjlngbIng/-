@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mutation regression tests for the R10 configuration auditor."""
+"""Mutation regression tests for the R10.1 configuration auditor."""
 
 from __future__ import annotations
 
@@ -106,10 +106,20 @@ cases = {
         "FINAL,Final,dns-failed",
         "USER-AGENT,WeChat*,Domestic\nFINAL,Final,dns-failed",
     ),
-    "cellular services excluded": replace_once(
+    "all networks forced": replace_once(
         baseline,
-        "include-cellular-services = true",
+        "include-all-networks = false",
+        "include-all-networks = true",
+    ),
+    "cellular services forced": replace_once(
+        baseline,
         "include-cellular-services = false",
+        "include-cellular-services = true",
+    ),
+    "AI capability labels excluded from Singapore": replace_once(
+        baseline,
+        "policy-regex-filter=(?i)^(?!.*(?:专用|專用|解锁|解鎖)).*(?:新加坡|",
+        "policy-regex-filter=(?i)^(?!.*(?:Gemini|GPT|ChatGPT|Claude|OpenAI|专用|專用|解锁|解鎖)).*(?:新加坡|",
     ),
     "automatic suspension": replace_once(
         baseline,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate R10's embedded service and direct-allowlist rules."""
+"""Regenerate R10.1's embedded service and direct-allowlist rules."""
 
 from __future__ import annotations
 
@@ -221,7 +221,7 @@ def main() -> int:
         print(f"PASS: generated profile is current: {profile}")
         return 0
     profile.write_text(generated, encoding="utf-8", newline="\n")
-    print(f"PASS: regenerated R10 embedded rules in {profile}")
+    print(f"PASS: regenerated R10.1 embedded rules in {profile}")
     return 0
 
 

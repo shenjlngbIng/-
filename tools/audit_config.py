@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit the public Surge iOS Strict Hybrid R10 profile."""
+"""Audit the public Surge iOS Stable Fail-Closed R10.1 profile."""
 
 from __future__ import annotations
 
@@ -84,10 +84,10 @@ required_general = {
     "compatibility-mode": "1",
     "wifi-assist": "false",
     "all-hybrid": "false",
-    "include-all-networks": "true",
+    "include-all-networks": "false",
     "include-local-networks": "false",
     "include-apns": "true",
-    "include-cellular-services": "true",
+    "include-cellular-services": "false",
     "icmp-forwarding": "false",
     "dns-server": "223.5.5.5, 119.29.29.29",
     "hijack-dns": "*:53",
@@ -170,6 +170,13 @@ if "include-all-proxies=1" not in groups["AllServer"]:
     fail("AllServer must retain locally audited [Proxy] entries")
 
 region_names = ["HongKong", "TaiWan", "Japan", "Singapore", "America"]
+region_samples = {
+    "HongKong": ["🇭🇰香港-Gemini-IEPL", "🇭🇰香港 2-IEPL"],
+    "TaiWan": ["🇹🇼台湾-IEPL", "🇹🇼台湾 2-IEPL"],
+    "Japan": ["🇯🇵日本-IEPL-GPT", "🇯🇵日本 2-IEPL-GPT", "🇯🇵日本 4-IEPL-家宽"],
+    "Singapore": ["🇸🇬新加坡-Gemini-IEPL", "🇸🇬新加坡 2-Gemini-IEPL"],
+    "America": ["🇺🇸美国-IEPL-GPT", "🇺🇸美国 2-IEPL-GPT"],
+}
 for name in region_names:
     value = groups.get(name, "")
     for token in ("url-test", "Fail-Closed", "tolerance=150", "interval=1800", "evaluate-before-use=true"):
@@ -177,6 +184,18 @@ for name in region_names:
             fail(f"{name} missing {token}")
     if "DIRECT" in value:
         fail(f"{name} contains DIRECT")
+    match = re.search(r"(?:^|,\s*)policy-regex-filter=(.*?),\s*tolerance=", value)
+    if not match:
+        fail(f"{name} is missing a parseable policy-regex-filter")
+    try:
+        pattern = re.compile(match.group(1))
+    except re.error as exc:
+        fail(f"{name} has an invalid policy-regex-filter: {exc}")
+    for policy_name in region_samples[name]:
+        if not pattern.search(policy_name):
+            fail(f"{name} excludes expected AI-capability node: {policy_name}")
+    if pattern.search(f"{region_samples[name][0]}-专用"):
+        fail(f"{name} includes an explicitly dedicated node")
 
 # Resolve the group graph and prove which groups can reach DIRECT.
 group_members: dict[str, list[str]] = {}
@@ -412,7 +431,7 @@ for forbidden_section in ("[Script]", "[MITM]", "[URL Rewrite]", "[Header Rewrit
 
 max_line = max(len(line) for line in lines)
 sha256 = hashlib.sha256(PROFILE.read_bytes()).hexdigest()
-print("PASS: Surge-Strict-Hybrid-R10.conf")
+print("PASS: Surge-Stable-Fail-Closed-R10.1.conf")
 print(f"sections={len(sections)} groups={len(groups)} rules={len(rules)}")
 print(f"embedded_service={len(actual_service)}/{source_count} embedded_apple={len(apple_rules)} embedded_domestic={len(domestic_rules)}")
 print(f"direct_groups={','.join(sorted(direct_groups))} max_line={max_line}")
