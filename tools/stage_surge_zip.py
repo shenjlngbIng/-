@@ -22,14 +22,14 @@ def normalized_target(name: str) -> PurePosixPath | None:
     if source.is_absolute() or ".." in source.parts:
         raise ValueError(f"unsafe archive path: {name!r}")
     parts = list(source.parts)
-    if parts and parts[0] == "Surge":
+    if parts and parts[0] in {"Surge", "Surge-R10-Candidate"}:
         parts.pop(0)
     if not parts:
         return None
     target = PurePosixPath(*parts)
-    if str(target) in {"Surge.conf", "README.md", "NOTICE.md", "CHANGELOG.md"}:
+    if str(target) in {"Surge.conf", "README.md", "NOTICE.md", "CHANGELOG.md", "MIGRATION.md"}:
         return target
-    if str(target) == "Rules/upstreams.lock.json":
+    if str(target) in {"Rules/upstreams.lock.json", "Rules/r10.lock.json"}:
         return target
     if len(target.parts) == 2 and target.parts[0] == "Rules" and target.suffix == ".list":
         return target

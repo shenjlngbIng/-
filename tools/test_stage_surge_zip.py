@@ -14,7 +14,9 @@ def main() -> int:
         "CHANGELOG.md": "CHANGELOG.md",
         "Rules/Ads_Custom_Extra.list": "Rules/Ads_Custom_Extra.list",
         "Rules/upstreams.lock.json": "Rules/upstreams.lock.json",
+        "Rules/r10.lock.json": "Rules/r10.lock.json",
         "Surge/NOTICE.md": "NOTICE.md",
+        "Surge-R10-Candidate/MIGRATION.md": "MIGRATION.md",
     }
     for source, expected in allowed.items():
         if normalized_target(source) != PurePosixPath(expected):
