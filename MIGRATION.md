@@ -57,7 +57,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 
 在 GitHub Actions 中确认以下检查通过：
 
-- R10/R10.1 规则锁和 32 个本地规则文件检查。
+- R10/R10.1 规则锁和 26 个锁定规则文件检查。
 - R10.1 内嵌规则可复现检查。
 - 策略闭环与配置检查。
 - 20 项安全变异回归测试。

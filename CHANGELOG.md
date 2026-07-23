@@ -6,6 +6,7 @@
 - 使用真机截图中的香港、台湾、日本、新加坡和美国节点名称新增地区组回归检查，防止可用节点再次因命名标签落入 `Fail-Closed`。
 - 默认关闭 `include-all-networks` 与 `include-cellular-services`，保留 `include-apns`，避免全网络接管触发请求风暴、AirDrop/Xcode 兼容问题和 iOS Network Extension 内存终止。
 - 保留 `Fail-Closed`、无 `DIRECT` 代理兜底、APNs 强制代理、DNS/UDP/QUIC 闭环及 R10 固定规则快照。
+- 删除 6 个未被 `r10.lock.json` 固定、未进入 `Surge.conf` 且没有运行时引用的历史规则快照；`Rules/` 现与 26 个锁定源文件严格一致。
 - 同步更新 README、NOTICE、迁移说明、审计器、20 项安全变异回归测试和两套 GitHub Actions 工作流。
 
 ## 2026-07-20 · R10

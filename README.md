@@ -178,7 +178,7 @@ python3 tools/test_stage_surge_zip.py
 
 ```text
 PASS: verified upstream lock services=19
-PASS: Rules | files=32 active_entries=135256 locked_files=26 embedded=5531
+PASS: Rules | files=26 active_entries=5726 locked_files=26 embedded=5531
 PASS: generated profile is current: .../Surge.conf
 PASS: Surge-Stable-Fail-Closed-R10.1.conf
 PASS: baseline + 20 security mutations
