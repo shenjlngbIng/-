@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-07-23 · R10.1
+
+- 将地区组中的 `Gemini`、`GPT`、`ChatGPT`、`Claude`、`OpenAI` 视为能力标签，不再排除这些节点；名称明确包含“专用/解锁”的节点仍只保留在 `AllServer`。
+- 使用真机截图中的香港、台湾、日本、新加坡和美国节点名称新增地区组回归检查，防止可用节点再次因命名标签落入 `Fail-Closed`。
+- 默认关闭 `include-all-networks` 与 `include-cellular-services`，保留 `include-apns`，避免全网络接管触发请求风暴、AirDrop/Xcode 兼容问题和 iOS Network Extension 内存终止。
+- 保留 `Fail-Closed`、无 `DIRECT` 代理兜底、APNs 强制代理、DNS/UDP/QUIC 闭环及 R10 固定规则快照。
+- 同步更新 README、NOTICE、迁移说明、审计器、20 项安全变异回归测试和两套 GitHub Actions 工作流。
+
 ## 2026-07-20 · R10
 
 - 按“国内与非推送 Apple 为明确白名单，其余境外、未知、DNS、IPv4/IPv6、UDP/STUN 不得意外直连”的模型重建配置。
