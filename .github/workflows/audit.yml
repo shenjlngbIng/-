@@ -1,4 +1,4 @@
-name: Audit Surge profile
+name: Audit Surge R10 profile
 
 on:
   push:
@@ -25,6 +25,7 @@ jobs:
       - name: Validate pinned metadata and Python sources
         run: |
           python3 -m json.tool Rules/upstreams.lock.json >/dev/null
+          python3 -m json.tool Rules/r10.lock.json >/dev/null
           python3 -m py_compile tools/*.py
           python3 tools/update_service_rules.py --verify-lock
 
@@ -35,7 +36,7 @@ jobs:
       - name: Audit profile and rule snapshots
         run: |
           python3 tools/audit_config.py Surge.conf
-          python3 tools/audit_rules.py Rules --profile Surge.conf
+          python3 tools/audit_rules.py Rules
 
       - name: Run regression checks
         run: |
