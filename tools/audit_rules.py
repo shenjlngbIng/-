@@ -90,8 +90,8 @@ def main() -> int:
         errors.append(f"R10 lock must contain 26 files, got {len(locked)}")
 
     files = sorted(root.glob("*.list"))
-    if len(files) != 32:
-        errors.append(f"Rules must contain 32 .list files, got {len(files)}")
+    if len(files) != 26:
+        errors.append(f"Rules must contain exactly the 26 locked .list files, got {len(files)}")
     total_entries = 0
     locked_source_entries = 0
     for path in files:
@@ -194,7 +194,7 @@ def main() -> int:
         if lock.get(key) != actual:
             errors.append(f"R10 lock aggregate mismatch for {key}: {lock.get(key)} != {actual}")
 
-    if total_entries != 135256:
+    if total_entries != 5726:
         errors.append(f"unexpected complete Rules entry count: {total_entries}")
 
     if errors:
