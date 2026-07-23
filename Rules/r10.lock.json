@@ -1,0 +1,219 @@
+{
+  "schema": 1,
+  "profile": "Surge iOS Strict Hybrid R10",
+  "source_repository": "shenjlngbIng/-",
+  "source_commit": "541641b64bf57ba83ccb9df6c59bd15b447ac265",
+  "service_source_entries": 4637,
+  "service_embedded_entries": 4483,
+  "direct_embedded_entries": 1048,
+  "files": [
+    {
+      "file": "Ads_Custom_Extra.list",
+      "sha256": "71571e6b76fa0ce46902350bd394d76dbb8c62322a016534af592446ce469bc3",
+      "active_entries": 206,
+      "embedded_entries": 206,
+      "role": "service",
+      "policy": "AdBlock"
+    },
+    {
+      "file": "ChatGPT.list",
+      "sha256": "46c8e3b5ae1be413c7107d28689f09d251d987a2cf5250cb3c63847a33dbe866",
+      "active_entries": 52,
+      "embedded_entries": 52,
+      "role": "service",
+      "policy": "ChatGPT"
+    },
+    {
+      "file": "Claude.list",
+      "sha256": "53c5106b39756280f6ab9eca5aaba81d2472bf529c6c030d619f369c550bb3a5",
+      "active_entries": 6,
+      "embedded_entries": 6,
+      "role": "service",
+      "policy": "Claude"
+    },
+    {
+      "file": "Gemini.list",
+      "sha256": "cc824670ed0b8baee93a12aebeb6c401bfeb4764b63d6d7806e3fd9289c6f228",
+      "active_entries": 21,
+      "embedded_entries": 21,
+      "role": "service",
+      "policy": "Gemini"
+    },
+    {
+      "file": "YouTube.list",
+      "sha256": "4c8202c27e5f7d321bf7a85a377a15dbd4fc1d572d914956c8c73533007adcb6",
+      "active_entries": 192,
+      "embedded_entries": 192,
+      "role": "service",
+      "policy": "YouTube"
+    },
+    {
+      "file": "Netflix.list",
+      "sha256": "7201c869ae378b252d467fe09762ff4e405a8b50e2e359aa8eb6d09d3dc3a91c",
+      "active_entries": 1154,
+      "embedded_entries": 1154,
+      "role": "service",
+      "policy": "NETFLIX"
+    },
+    {
+      "file": "Disney.list",
+      "sha256": "9d676639f5e3a4e9f3b5d0e55d827978e00118b39b25276ccd190919103e500b",
+      "active_entries": 172,
+      "embedded_entries": 172,
+      "role": "service",
+      "policy": "Disney+"
+    },
+    {
+      "file": "HBO.list",
+      "sha256": "4b3fd64e4be8b1497bcba563f814702bb0ce0c403734ce55bd3084fa88928d92",
+      "active_entries": 47,
+      "embedded_entries": 47,
+      "role": "service",
+      "policy": "HBO"
+    },
+    {
+      "file": "PrimeVideo.list",
+      "sha256": "4466a46e37280b52f60c447dbb9d6a4273b5d656b27f0a5ea72f258c9afb4d01",
+      "active_entries": 18,
+      "embedded_entries": 18,
+      "role": "service",
+      "policy": "PrimeVideo"
+    },
+    {
+      "file": "Emby.list",
+      "sha256": "efdcd06070fdc944351694b8467707b6aa9aa0b5b5ccaa0720c3adb49a771246",
+      "active_entries": 218,
+      "embedded_entries": 218,
+      "role": "service",
+      "policy": "Emby"
+    },
+    {
+      "file": "TikTok.list",
+      "sha256": "3d54df7d8bef801e579f9d10fb9c514c7ad142f0b50a7941870d065c1a1a2aee",
+      "active_entries": 87,
+      "embedded_entries": 87,
+      "role": "service",
+      "policy": "TikTok"
+    },
+    {
+      "file": "Bahamut.list",
+      "sha256": "0b13d4544efaca1e7a2b205abda73a78d782450a885b9803d668ef072a4cb6b5",
+      "active_entries": 10,
+      "embedded_entries": 9,
+      "role": "service",
+      "policy": "Bahamut"
+    },
+    {
+      "file": "BiliBiliIntl.list",
+      "sha256": "6972713a9cc71733590b8bb10bb73a28c39092f0a6c469324f90045b10ac92f0",
+      "active_entries": 1,
+      "embedded_entries": 1,
+      "role": "service",
+      "policy": "Streaming"
+    },
+    {
+      "file": "Spotify.list",
+      "sha256": "2b415fdf1a57fb6af6a28d1b4f7fd85afe9ce0c58be0f567ad452aa45674d543",
+      "active_entries": 30,
+      "embedded_entries": 30,
+      "role": "service",
+      "policy": "Spotify"
+    },
+    {
+      "file": "ProxyMedia.list",
+      "sha256": "6d99612bb86179253258fcdd90ed337ac1159e4564136464f918f615323676c5",
+      "active_entries": 321,
+      "embedded_entries": 227,
+      "role": "service",
+      "policy": "Streaming"
+    },
+    {
+      "file": "Telegram.list",
+      "sha256": "1ba917cd59a143a8255d941938625111709c62a890d66604e6f984fa11f38e92",
+      "active_entries": 51,
+      "embedded_entries": 51,
+      "role": "service",
+      "policy": "Telegram"
+    },
+    {
+      "file": "Github.list",
+      "sha256": "ecefa7e1163dd595b73c4dc2e42d9b48cac48bb2ccbfe0d7d6215bdea7258059",
+      "active_entries": 31,
+      "embedded_entries": 31,
+      "role": "service",
+      "policy": "GitHub"
+    },
+    {
+      "file": "Twitter.list",
+      "sha256": "e8a3e2e72cfd546eadca02ea58c9d556da252cdea6b25f2abbd71432c14670d6",
+      "active_entries": 33,
+      "embedded_entries": 33,
+      "role": "service",
+      "policy": "X"
+    },
+    {
+      "file": "Google.list",
+      "sha256": "ae5daa812c36be55847806bcb098f9b90f13e238c2d90024ff8d5183096fe1cb",
+      "active_entries": 705,
+      "embedded_entries": 693,
+      "role": "service",
+      "policy": "Google"
+    },
+    {
+      "file": "OneDrive.list",
+      "sha256": "3735ccb2620f489ee1e77b7ea3c64a9aba82f9ac19d9f0d2a8f8b90e5a5314b0",
+      "active_entries": 16,
+      "embedded_entries": 16,
+      "role": "service",
+      "policy": "Microsoft"
+    },
+    {
+      "file": "Microsoft.list",
+      "sha256": "c6efd7c71cdc19cb80687b020108a406914d6dcb37fdd6973c94bafc39a7bfe3",
+      "active_entries": 669,
+      "embedded_entries": 659,
+      "role": "service",
+      "policy": "Microsoft"
+    },
+    {
+      "file": "Game.list",
+      "sha256": "5d407cae765790d095a51b44476b94edb433f6193f37d361575d3ddfd340617f",
+      "active_entries": 597,
+      "embedded_entries": 560,
+      "role": "service",
+      "policy": "Games"
+    },
+    {
+      "file": "AppleCN.list",
+      "sha256": "4e9c6a61c0664915fc7ef3e84779cd0baae8cc9236aed017f696570a3342b95f",
+      "active_entries": 166,
+      "embedded_entries": 166,
+      "role": "direct_allowlist",
+      "policy": "Apple"
+    },
+    {
+      "file": "WeChat.list",
+      "sha256": "6f84eb140617a7335da7358f3eed6f475552e1925a0182e097ea5886b60a2086",
+      "active_entries": 33,
+      "embedded_entries": 30,
+      "role": "direct_allowlist",
+      "policy": "Domestic"
+    },
+    {
+      "file": "Direct.list",
+      "sha256": "b9f22808716cb0af951b446532f6610d1133a5b2bc58bd55ea00074b19cdf63e",
+      "active_entries": 23,
+      "embedded_entries": 5,
+      "role": "direct_allowlist",
+      "policy": "Domestic"
+    },
+    {
+      "file": "ChinaDomain.list",
+      "sha256": "68db242b54aa72aee22137d5f8234818b4563092c3b5d8e43e426a140388fa26",
+      "active_entries": 867,
+      "embedded_entries": 847,
+      "role": "direct_allowlist",
+      "policy": "Domestic"
+    }
+  ]
+}
