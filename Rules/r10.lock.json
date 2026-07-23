@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "profile": "Surge iOS Strict Hybrid R10",
+  "profile": "Surge iOS Stable Fail-Closed R10.1",
   "source_repository": "shenjlngbIng/-",
   "source_commit": "541641b64bf57ba83ccb9df6c59bd15b447ac265",
   "service_source_entries": 4637,
