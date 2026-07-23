@@ -1,4 +1,4 @@
-name: Validate Surge ZIP
+name: Validate Surge R10.1 ZIP
 
 on:
   workflow_dispatch:

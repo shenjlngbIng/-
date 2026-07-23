@@ -1,4 +1,4 @@
-name: Audit Surge R10 profile
+name: Audit Surge R10.1 profile
 
 on:
   push:
