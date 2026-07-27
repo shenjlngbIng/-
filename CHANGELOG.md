@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-26 · R10.2
+
+- 将 Apple、微信和国内域名白名单移到服务规则及通用 `STUN → QUIC → UDP` 守卫之前；新增 `GEOIP,CN,Domestic`，已知国内 UDP/QUIC 不再被通用代理规则抢先命中，未知流量仍失败关闭。
+- 为 1048 条 Apple/国内域名规则启用 `extended-matching`，补充 SNI 与 HTTP Host 场景，改善应用使用 HTTPDNS 或直接连接 IP 时的分流。
+- 广告补充规则从 206 条收窄为 152 条，移除全部 IP 拦截、HTTPDNS 地址、B站 PCDN/Tracker、微信相关项以及 `adspace`/`adsdk` 宽泛关键词。
+- 删除会覆盖 Apple Store/CDN 的 APNs 宽泛 `apple.com.edgekey.net` 规则；在稳定接管模式下把无效的 `include-apns=true` 改为 `false`，不再宣称完整捕获 APNs。
+- 加入系统 DNS 并与两个国内上游并行查询；切换到 VIF-only `compatibility-mode=3` 并恢复 GeoIP 数据库自动更新；补充 Kowloon、Taipei、Kaohsiung、Tokyo、Osaka、Lion City、Los Angeles、San Jose、Seattle、New York 节点名。
+- 将 ChatGPT、Claude、Gemini、HBO、PrimeVideo 默认地区调整为美国，Bahamut 默认调整为台湾。
+- 将 4 条 Games 精确 IP 提前到 Netflix 公有云大网段之前；新增域名路由模拟、跨策略 CIDR 覆盖检查、HTTPDNS/广告误伤检查及 30 项变异回归测试。
+
 ## 2026-07-23 · R10.1
 
 - 将地区组中的 `Gemini`、`GPT`、`ChatGPT`、`Claude`、`OpenAI` 视为能力标签，不再排除这些节点；名称明确包含“专用/解锁”的节点仍只保留在 `AllServer`。

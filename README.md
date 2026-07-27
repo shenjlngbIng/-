@@ -1,33 +1,33 @@
-# Surge iOS Stable Fail-Closed R10.1
+# Surge iOS Stable Fail-Closed R10.2
 
-这是面向 Surge iOS 的稳定失败关闭配置。对于已经由 Surge 接管的流量，国内与非推送 Apple 的逐条白名单属于明确直连选择；APNs、境外、未知、未获准的 DNS、IPv4/IPv6、UDP、QUIC 与 STUN 不得因为节点、规则、解析或订阅失效而回落到互联网直连。
+这是面向 Surge iOS 的稳定失败关闭配置。对于已经由 Surge 接管的流量，Apple/国内域名白名单先分类，中国大陆 IP 再由 `GEOIP,CN` 兜底；境外、未知和未获准的 DNS 不会因为节点、规则、解析或订阅失效而回落到互联网直连。已知国内及服务规则先于通用 UDP/QUIC/STUN 守卫，避免微信、B站等国内应用被误送代理。
 
-R10.1 不包含真实节点、订阅 URL、Token、MITM、脚本或 Rewrite。公开文件没有可用节点时会进入 `Fail-Closed`，这是预期结果。默认关闭“包含所有网络请求”和蜂窝系统服务接管，以避免 iOS Network Extension 出现请求风暴与内存终止；因此本配置不宣称接管系统中所有可能绕过 VIF 的流量。
+R10.2 不包含真实节点、订阅 URL、Token、MITM、脚本或 Rewrite。公开文件没有可用节点时会进入 `Fail-Closed`，这是预期结果。默认关闭“包含所有网络请求”、APNs 专项和蜂窝系统服务接管，以避免 iOS Network Extension 出现请求风暴与内存终止；因此本配置不宣称接管系统中所有可能绕过 VIF 的流量。
 
 > [!IMPORTANT]
 > Surge 必须保持“规则模式”，设备上不得加载未经审计的 Module。全局直连模式和额外 Module 都能绕过本配置自身的闭环。
 
 ## 当前状态
 
-最后审计日期：**2026-07-23**
+最后审计日期：**2026-07-26**
 
-| 项目 | R10.1 |
+| 项目 | R10.2 |
 | --- | --- |
 | 目标平台 | Surge iOS |
 | 最低版本 | 5.14.6+ |
 | 配置段 | 5 |
 | 策略组 | 30 |
-| 有效规则 | 5599 |
-| 固定内嵌服务规则 | 4483 条，来自 22 个源文件 |
-| 固定内嵌直连规则 | Apple 166 条、Domestic 882 条 |
+| 有效规则 | 5545 |
+| 固定内嵌服务规则 | 4429 条，来自 22 个源文件 |
+| 固定内嵌直连规则 | Apple 166 条、Domestic 域名 882 条，另有中国 GEOIP 兜底 |
 | 外部规则 URL | 0 |
 | 动态 `policy-path` | 1 个公开占位项，需在设备私有副本替换 |
 | 可到达 `DIRECT` 的策略组 | 仅 `Apple`、`Domestic` |
 | IPv6 | `true`，VIF `auto` |
-| 系统接管 | VIF/代理与 APNs；不强制接管全部网络及蜂窝系统服务 |
+| 系统接管 | VIF-only；不强制接管全部网络、APNs 专项及蜂窝系统服务 |
 | UDP 失效行为 | `REJECT` |
 | API、面板、Wi-Fi/热点共享 | 关闭 |
-| `Surge.conf` SHA-256 | `cc4378eb5f3f4b8d8ea4da76ad2124f9271ac56e09525d295f2410ae1c0b695c` |
+| `Surge.conf` SHA-256 | `4ae0a9c607668d1ca3f2ebcee087752326d50cc03b42950755279ff7376f60d9` |
 
 ## 导入地址
 
@@ -80,14 +80,14 @@ Final → Proxy
 
 ## DNS 边界
 
-R10 保留两个明确的国内传统 DNS 控制面例外：
+R10.2 使用系统解析器和两个明确的国内传统 DNS 上游：
 
 ```ini
-dns-server = 223.5.5.5, 119.29.29.29
+dns-server = system, 223.5.5.5, 119.29.29.29
 hijack-dns = *:53
 ```
 
-它们不是业务流量的回退策略，且没有 `system` DNS。两个服务器由 Surge 同时查询；相较 R9 删除了第三个上游，减少每次解析的请求扇出。
+三组解析器由 Surge 并行查询并采用最先返回的结果。加入 `system` 可降低设备位于中国大陆之外时两个国内上游同时不可达造成的整机解析失败；它不是业务流量的 DIRECT 兜底。
 
 规则层还执行：
 
@@ -101,27 +101,29 @@ hijack-dns = *:53
 ## IPv4、IPv6、UDP、QUIC 与 STUN
 
 - `include-all-networks=false`，避免接管额外系统流量引发请求风暴和 Network Extension 内存终止。
-- `include-apns=true`，APNs 由 Surge VIF 接管。
+- `compatibility-mode=3` 使用 Surge 当前默认的 VIF-only 接管，避免部分 App 检测系统代理设置后拒绝联网。
+- `include-apns=false`；Surge 要求该选项与 `include-all-networks=true` 配合，稳定模式不再保留无效组合或宣称完整接管 APNs。
 - `include-cellular-services=false`，不接管 VoLTE、Wi-Fi Calling、IMS、MMS、Visual Voicemail 等蜂窝系统业务。
 - 运营商直接路由到私网的蜂窝业务可能始终位于隧道外，这是 iOS/运营商边界。
 - `ipv6=true`、`ipv6-vif=auto`；未知 IPv6 与未知 IPv4 一样最终进入代理。
-- 服务专用代理规则先分类，随后 `STUN → QUIC → UDP` 守卫位于所有互联网直连白名单之前。
-- 国内或 Apple 的 UDP 也不会因为域名白名单而直连；局域网的精确 mDNS/SSDP 例外除外。
+- Apple、微信和国内域名规则先分类，并为可见的 SNI/HTTP Host 启用 `extended-matching`。
+- 服务规则随后分类；未命中的目标通过自动更新的 GeoIP 数据库和 `GEOIP,CN` 判断中国大陆 IPv4/IPv6。
+- `STUN → QUIC → UDP` 守卫位于上述分类之后，因此已知国内 UDP/QUIC 可直连，境外服务仍走对应代理组，未知 UDP 仍走 `Proxy`。
 - `udp-policy-not-supported-behaviour=REJECT`，节点不支持 UDP 时直接拒绝。
 - `block-quic=all-proxy`，代理策略上的 QUIC 被阻止并由应用自行回落到 TCP，而不是 DIRECT。
 - `icmp-forwarding=false`。
 
 ## Apple、APNs 与 Telegram
 
-R10 保留上一版 APNs 特殊设计：
+R10.2 对已被当前接管面捕获的 APNs 保留优先代理规则：
 
-- 4 条 APNs 域名规则。
+- 3 条精确 APNs 域名/后缀规则；删除会覆盖 Apple Store/CDN 的宽泛 `apple.com.edgekey.net` 关键词。
 - 5 条 Apple 官方 IPv4 网段规则。
 - 4 条 Apple 官方 IPv6 网段规则。
 - APNs 与 Telegram 长连接主机保持 Raw TCP。
 - 全部 APNs 规则位于 Apple/Domestic 直连白名单之前并固定绑定 `Proxy`。
 
-`Telegram.list` 从外部引用改为同一固定快照的本地内嵌，仍绑定 `Telegram` 代理组。本轮只保留和审计上述路由设计，不把它表述为 Telegram 推送问题的完整诊断。
+稳定模式关闭 `include-all-networks` 和 `include-apns`，所以这些规则不表示所有 APNs 流量一定进入 VIF。需要防火墙式完整接管时，应同时启用两项并单独完成真机负载测试。`Telegram.list` 仍绑定 `Telegram` 代理组。
 
 ## 直连白名单清洗
 
@@ -132,15 +134,17 @@ R10 内嵌直连敏感规则，不让远程更新获得直连权限：
 - `Direct.list`：只保留 4 个明确腾讯域名及 `goodnotesapp.com.cn`，共 5 条。
 - `ChinaDomain.list`：删除 3 条 `USER-AGENT`、13 条 DNS 服务域名和 4 条重复项，保留 847 条。
 
-Google、`api.goodnotescloud.com`、`fileball.app` 与 `pianyuan.org` 不再获得国内直连。
+以上域名规则位于境外服务快照之前，因此 `officewebapps.cn`、`snssdk.com`、`steamchina.com` 等国内规则不再被 Microsoft、TikTok 或 Games 组抢先命中。中国大陆 IP 由后置 `GEOIP,CN,Domestic` 补齐；Google、`api.goodnotescloud.com`、`fileball.app` 与 `pianyuan.org` 仍不获得国内直连。
+
+广告补充规则从 206 条收窄为 152 条，仅保留域名匹配；移除了全部 IP 拦截、阿里/腾讯等 HTTPDNS 风险地址、B站 PCDN/Tracker、微信相关关键词，以及会误杀 `deadspacegame.com`、Apple CDN 的宽泛 `adspace`/`adsdk`。
 
 ## 规则供应链
 
-运行时不存在 `RULE-SET`/`DOMAIN-SET` URL。配置将 22 个代理/拒绝源文件压平为普通 iOS 规则，并按原始顺序删除 154 条永远不会命中的重复条件。四个直连源另按上述规则清洗。
+运行时不存在 `RULE-SET`/`DOMAIN-SET` URL。配置将 22 个代理/拒绝源文件压平为 4429 条普通 iOS 规则，并按原始顺序删除不可达重复条件。四个直连源另按上述规则清洗。4 条 Games 精确 IP 会先于 Netflix 公有云大网段写入，生成器同时删除其原位置，避免首次命中错误。
 
 `Rules/r10.lock.json` 固定：
 
-- 本地来源提交 `541641b64bf57ba83ccb9df6c59bd15b447ac265`。
+- R10.2 修正基线提交 `4d2f7d2f3acef6cc0a2efa18c44ff3ad49b92ada`。
 - 26 个运行时源文件的 SHA-256。
 - 原始有效项数量、实际内嵌数量、角色与目标策略。
 
@@ -148,12 +152,12 @@ Google、`api.goodnotescloud.com`、`fileball.app` 与 `pianyuan.org` 不再获�
 
 ## 仓库文件处理
 
-升级 R10.1 不需要删除任何已跟踪文件：
+升级 R10.2 不需要删除任何已跟踪文件：
 
 - `Rules/`：保留，供生成、审计和来源追踪使用。
 - `NOTICE.md`、`THIRD_PARTY_LICENSES/`：必须保留。
-- `tools/`：已更新为 R10.1 生成器和审计器。
-- `.github/workflows/`：已更新为 R10.1 检查。
+- `tools/`：已更新为 R10.2 生成器和语义审计器。
+- `.github/workflows/`：已更新为 R10.2 检查。
 - `tools/__pycache__/`：本地缓存，已由 `.gitignore` 忽略，不要上传。
 
 未被 R10 运行时加载的规则快照仍可保留作来源与比较资料；它们不会因为存在于 `Rules/` 就自动进入 Surge。
@@ -178,10 +182,10 @@ python3 tools/test_stage_surge_zip.py
 
 ```text
 PASS: verified upstream lock services=19
-PASS: Rules | files=26 active_entries=5726 locked_files=26 embedded=5531
+PASS: Rules | files=26 active_entries=5672 locked_files=26 embedded=5477
 PASS: generated profile is current: .../Surge.conf
-PASS: Surge-Stable-Fail-Closed-R10.1.conf
-PASS: baseline + 20 security mutations
+PASS: Surge-Stable-Fail-Closed-R10.2.conf
+PASS: baseline + 30 security mutations
 PASS: ZIP allowlist regression cases=12
 ```
 
@@ -192,13 +196,13 @@ PASS: ZIP allowlist regression cases=12
 静态审计通过不等于真机网络、通知或温度已经得到证明。至少检查：
 
 1. 全部真实节点关闭时，境外和未知目标失败且不显示本地公网出口。
-2. 国内 TCP 命中 `Domestic`，国内 UDP/QUIC/STUN 命中代理守卫。
+2. 微信、B站及其他已知国内 TCP/UDP/QUIC 命中 `Domestic`；未知 UDP/STUN 命中 `Proxy`。
 3. 未知 IPv4、IPv6 和域名命中 `Final → Proxy`。
-4. APNs 域名与官方网段无论 `Apple` 当前选择如何都命中 `Proxy`。
+4. 已被接管的 APNs 域名与官方网段无论 `Apple` 当前选择如何都命中 `Proxy`；稳定模式不宣称完整捕获 APNs。
 5. Wi-Fi 与蜂窝网络分别测试；确认没有额外 Module、脚本、DNS 或策略订阅。
 6. 在稳定信号、非充电条件下静置至少 15 分钟记录温度、电量与事件数量。
 
-R10.1 默认采用稳定模式，不开启全网络与蜂窝系统服务接管。只有在明确需要防火墙式完整接管、并完成真机负载验证时，才应临时启用这些选项；启用后需要重点观察每秒请求数、内存终止和 AirDrop/Xcode 等系统功能。
+R10.2 默认采用稳定模式，不开启全网络、APNs 专项与蜂窝系统服务接管。只有在明确需要防火墙式完整接管、并完成真机负载验证时，才应同时启用 `include-all-networks` 与 `include-apns`；启用后需要重点观察每秒请求数、内存终止和 AirDrop/Xcode 等系统功能。
 
 ## 许可与免责声明
 
