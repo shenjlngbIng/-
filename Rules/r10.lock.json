@@ -1,17 +1,17 @@
 {
   "schema": 1,
-  "profile": "Surge iOS Stable Fail-Closed R10.1",
+  "profile": "Surge iOS Stable Fail-Closed R10.2",
   "source_repository": "shenjlngbIng/-",
-  "source_commit": "541641b64bf57ba83ccb9df6c59bd15b447ac265",
-  "service_source_entries": 4637,
-  "service_embedded_entries": 4483,
+  "source_commit": "4d2f7d2f3acef6cc0a2efa18c44ff3ad49b92ada",
+  "service_source_entries": 4583,
+  "service_embedded_entries": 4429,
   "direct_embedded_entries": 1048,
   "files": [
     {
       "file": "Ads_Custom_Extra.list",
-      "sha256": "71571e6b76fa0ce46902350bd394d76dbb8c62322a016534af592446ce469bc3",
-      "active_entries": 206,
-      "embedded_entries": 206,
+      "sha256": "8aa0ee74294e2ddfc23429930eb480c820e99e926fe2badacec1eacd40a7403f",
+      "active_entries": 152,
+      "embedded_entries": 152,
       "role": "service",
       "policy": "AdBlock"
     },
