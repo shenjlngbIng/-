@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mutation regression tests for the R10.1 configuration auditor."""
+"""Mutation regression tests for the R10.2 configuration auditor."""
 
 from __future__ import annotations
 
@@ -71,10 +71,10 @@ cases = {
         "IP-CIDR6,2620:149:a44::/48,Proxy,no-resolve",
         "IP-CIDR6,2620:149:a44::/48,Apple,no-resolve",
     ),
-    "UDP gate after direct": swap_once(
+    "UDP gate before direct": swap_once(
         baseline,
         "PROTOCOL,UDP,Proxy",
-        "DOMAIN,api.smoot.apple.cn,Apple",
+        "DOMAIN,api.smoot.apple.cn,Apple,extended-matching",
     ),
     "UDP unsupported direct": replace_once(
         baseline,
@@ -86,10 +86,40 @@ cases = {
         "DOMAIN,doh.360.cn,Proxy",
         "DOMAIN,doh.360.cn,Domestic",
     ),
-    "system DNS fallback": replace_once(
+    "system DNS removed": replace_once(
         baseline,
-        "dns-server = 223.5.5.5, 119.29.29.29",
         "dns-server = system, 223.5.5.5, 119.29.29.29",
+        "dns-server = 223.5.5.5, 119.29.29.29",
+    ),
+    "inconsistent APNs capture": replace_once(
+        baseline,
+        "include-apns = false",
+        "include-apns = true",
+    ),
+    "China GEOIP removed": replace_once(
+        baseline,
+        "GEOIP,CN,Domestic",
+        "GEOIP,US,Domestic",
+    ),
+    "direct extended matching removed": replace_once(
+        baseline,
+        "DOMAIN,api.smoot.apple.cn,Apple,extended-matching",
+        "DOMAIN,api.smoot.apple.cn,Apple",
+    ),
+    "HTTPDNS IP ad block restored": replace_once(
+        baseline,
+        "GEOIP,CN,Domestic",
+        "IP-CIDR,203.107.1.0/24,AdBlock,no-resolve\nGEOIP,CN,Domestic",
+    ),
+    "broad ad keyword restored": replace_once(
+        baseline,
+        "GEOIP,CN,Domestic",
+        "DOMAIN-KEYWORD,adspace,AdBlock\nGEOIP,CN,Domestic",
+    ),
+    "Games IP shadow restored": swap_once(
+        baseline,
+        "IP-CIDR,34.220.160.16/32,Games,no-resolve",
+        "IP-CIDR,34.208.0.0/12,NETFLIX,no-resolve",
     ),
     "mutable SYSTEM direct": replace_once(
         baseline,
@@ -121,6 +151,16 @@ cases = {
         "policy-regex-filter=(?i)^(?!.*(?:专用|專用|解锁|解鎖)).*(?:新加坡|",
         "policy-regex-filter=(?i)^(?!.*(?:Gemini|GPT|ChatGPT|Claude|OpenAI|专用|專用|解锁|解鎖)).*(?:新加坡|",
     ),
+    "English city label excluded from Japan": replace_once(
+        baseline,
+        "|Japan|Tokyo|Osaka|",
+        "|Japan|Osaka|",
+    ),
+    "Bahamut defaults to Hong Kong proxy": replace_once(
+        baseline,
+        "Bahamut = select, TaiWan, Proxy,",
+        "Bahamut = select, Proxy, TaiWan,",
+    ),
     "automatic suspension": replace_once(
         baseline,
         "auto-suspend = false",
@@ -130,6 +170,16 @@ cases = {
         baseline,
         "icmp-forwarding = false",
         "icmp-forwarding = true",
+    ),
+    "proxy takeover compatibility mode restored": replace_once(
+        baseline,
+        "compatibility-mode = 3",
+        "compatibility-mode = 1",
+    ),
+    "GeoIP database updates disabled": replace_once(
+        baseline,
+        "disable-geoip-db-auto-update = false",
+        "disable-geoip-db-auto-update = true",
     ),
 }
 

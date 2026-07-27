@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate R10.1's embedded service and direct-allowlist rules."""
+"""Regenerate R10.2's embedded domestic, service, and protocol rules."""
 
 from __future__ import annotations
 
@@ -51,10 +51,20 @@ SERVICE_LAYOUT = [
         ],
     ),
 ]
-SERVICE_START = SERVICE_LAYOUT[0][0]
-SERVICE_END = "# UDP/STUN/QUIC：代理，失败拒绝"
+RUNTIME_START = "# 运行时规则（固定快照）"
+RUNTIME_END = "# 兜底：境外/未知/解析失败走代理"
+UDP_HEADING = "# UDP/STUN/QUIC：已知国内/服务先分类，未知流量代理"
 DIRECT_START = "# 直连白名单（固定快照）"
-DIRECT_END = "# 兜底：境外/未知/解析失败走代理"
+
+# These exact game endpoints are otherwise swallowed by earlier, broad Netflix
+# cloud CIDRs. Keep only the four precise exceptions ahead of the service block;
+# their original Game.list occurrences are removed by first-match de-duplication.
+SERVICE_PRIORITY_OVERRIDES = [
+    ("Game.list", "IP-CIDR,34.220.160.16/32,no-resolve", "Games"),
+    ("Game.list", "IP-CIDR,52.13.150.128/32,no-resolve", "Games"),
+    ("Game.list", "IP-CIDR,52.13.42.120/32,no-resolve", "Games"),
+    ("Game.list", "IP-CIDR,52.50.131.212/32,no-resolve", "Games"),
+]
 
 DIRECT_EXTRA_ALLOW = {
     "DOMAIN,fairplay.l.qq.com",
@@ -89,12 +99,14 @@ def active_rules(root: Path, filename: str) -> list[str]:
     ]
 
 
-def add_policy(rule: str, policy: str) -> str:
+def add_policy(rule: str, policy: str, *, extended_matching: bool = False) -> str:
     fields = [part.strip() for part in rule.split(",")]
     if fields[-1].lower() == "no-resolve":
         fields.insert(-1, policy)
     else:
         fields.append(policy)
+    if extended_matching and fields[0] in {"DOMAIN", "DOMAIN-SUFFIX", "DOMAIN-KEYWORD"}:
+        fields.append("extended-matching")
     return ",".join(fields)
 
 
@@ -109,7 +121,27 @@ def lock_data(root: Path) -> tuple[str, dict[str, dict[str, object]]]:
 def build_service_block(root: Path) -> list[str]:
     _, locked = lock_data(root)
     seen: set[str] = set()
-    output: list[str] = []
+    priority_count: dict[str, int] = {}
+    output: list[str] = [
+        "# 服务精确优先级修正",
+        "# Games 精确 IP 先于 Netflix 公有云大网段",
+    ]
+    for filename, rule, policy in SERVICE_PRIORITY_OVERRIDES:
+        source = active_rules(root, filename)
+        item = locked.get(filename)
+        if item is None:
+            raise ValueError(f"missing R10 lock entry: {filename}")
+        if item.get("policy") != policy:
+            raise ValueError(f"locked policy mismatch for {filename}")
+        if rule not in source:
+            raise ValueError(f"service priority override is missing from {filename}: {rule}")
+        if rule in seen:
+            raise ValueError(f"duplicate service priority override: {rule}")
+        seen.add(rule)
+        priority_count[filename] = priority_count.get(filename, 0) + 1
+        output.append(add_policy(rule, policy))
+    output.append("")
+
     for group_index, (heading, items) in enumerate(SERVICE_LAYOUT):
         if group_index:
             output.append("")
@@ -127,7 +159,8 @@ def build_service_block(root: Path) -> list[str]:
                 raise ValueError(f"missing R10 lock entry: {filename}")
             if item.get("policy") != policy:
                 raise ValueError(f"locked policy mismatch for {filename}")
-            if item.get("active_entries") != len(source) or item.get("embedded_entries") != len(kept):
+            emitted = len(kept) + priority_count.get(filename, 0)
+            if item.get("active_entries") != len(source) or item.get("embedded_entries") != emitted:
                 raise ValueError(f"locked count mismatch for {filename}")
             output.append(f"# {filename} · {len(kept)}/{len(source)} · {policy}")
             output.extend(add_policy(rule, policy) for rule in kept)
@@ -170,16 +203,33 @@ def build_direct_block(root: Path) -> list[str]:
     return [
         DIRECT_START,
         f"# AppleCN · {len(apple)} · Apple",
-        *[add_policy(rule, "Apple") for rule in apple],
+        *[add_policy(rule, "Apple", extended_matching=True) for rule in apple],
         "",
         f"# WeChat · {len(wechat)} · Domestic（剔除宽泛 UA/ASN）",
-        *[add_policy(rule, "Domestic") for rule in wechat],
+        *[add_policy(rule, "Domestic", extended_matching=True) for rule in wechat],
         "",
         f"# Direct · {len(direct)} · Domestic（精选）",
-        *[add_policy(rule, "Domestic") for rule in direct],
+        *[add_policy(rule, "Domestic", extended_matching=True) for rule in direct],
         "",
         f"# ChinaDomain · {len(china)} · Domestic（剔除宽泛/敏感项）",
-        *[add_policy(rule, "Domestic") for rule in china],
+        *[add_policy(rule, "Domestic", extended_matching=True) for rule in china],
+        "",
+    ]
+
+
+def build_runtime_block(root: Path) -> list[str]:
+    return [
+        RUNTIME_START,
+        "",
+        *build_direct_block(root),
+        *build_service_block(root),
+        "# 中国大陆 IP 兜底；未知国内域名由本地解析后判定",
+        "GEOIP,CN,Domestic",
+        "",
+        UDP_HEADING,
+        "PROTOCOL,STUN,Proxy",
+        "PROTOCOL,QUIC,Proxy",
+        "PROTOCOL,UDP,Proxy",
         "",
     ]
 
@@ -196,8 +246,7 @@ def replace_block(lines: list[str], start: str, end: str, replacement: list[str]
 
 def render(profile: Path, root: Path) -> str:
     lines = profile.read_text(encoding="utf-8-sig").splitlines()
-    lines = replace_block(lines, SERVICE_START, SERVICE_END, build_service_block(root))
-    lines = replace_block(lines, DIRECT_START, DIRECT_END, build_direct_block(root))
+    lines = replace_block(lines, RUNTIME_START, RUNTIME_END, build_runtime_block(root))
     return "\n".join(lines) + "\n"
 
 
@@ -221,7 +270,7 @@ def main() -> int:
         print(f"PASS: generated profile is current: {profile}")
         return 0
     profile.write_text(generated, encoding="utf-8", newline="\n")
-    print(f"PASS: regenerated R10.1 embedded rules in {profile}")
+    print(f"PASS: regenerated R10.2 embedded rules in {profile}")
     return 0
 
 

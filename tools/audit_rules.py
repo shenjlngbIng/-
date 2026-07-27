@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the rule snapshots and the immutable R10 embedding lock."""
+"""Validate the rule snapshots and the immutable R10.2 embedding lock."""
 
 from __future__ import annotations
 
@@ -194,8 +194,11 @@ def main() -> int:
         if lock.get(key) != actual:
             errors.append(f"R10 lock aggregate mismatch for {key}: {lock.get(key)} != {actual}")
 
-    if total_entries != 5726:
-        errors.append(f"unexpected complete Rules entry count: {total_entries}")
+    if total_entries != locked_source_entries:
+        errors.append(
+            "complete Rules entry count differs from the locked file totals: "
+            f"{total_entries} != {locked_source_entries}"
+        )
 
     if errors:
         for error in errors[:100]:
