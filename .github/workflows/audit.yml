@@ -1,0 +1,25 @@
+name: Audit Surge R10.5 profile
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Audit configuration
+        run: python tools/audit_config.py
+      - name: Audit rule sources
+        run: python tools/audit_rules.py
+      - name: Run mutation tests
+        run: python tools/test_audit_config.py
