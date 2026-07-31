@@ -1,211 +1,39 @@
-# Surge iOS Stable Fail-Closed R10.2
+# Surge iOS Stable Fail-Closed R10.5
 
-这是面向 Surge iOS 的稳定失败关闭配置。对于已经由 Surge 接管的流量，Apple/国内域名白名单先分类，中国大陆 IP 再由 `GEOIP,CN` 兜底；境外、未知和未获准的 DNS 不会因为节点、规则、解析或订阅失效而回落到互联网直连。已知国内及服务规则先于通用 UDP/QUIC/STUN 守卫，避免微信、B站等国内应用被误送代理。
+面向 **Surge iOS 5.14.6+** 的公开失败关闭配置。仓库运行文件不含真实节点、订阅 URL、Token、密码或设备证书。
 
-R10.2 不包含真实节点、订阅 URL、Token、MITM、脚本或 Rewrite。公开文件没有可用节点时会进入 `Fail-Closed`，这是预期结果。默认关闭“包含所有网络请求”、APNs 专项和蜂窝系统服务接管，以避免 iOS Network Extension 出现请求风暴与内存终止；因此本配置不宣称接管系统中所有可能绕过 VIF 的流量。
+## 当前基线
 
-> [!IMPORTANT]
-> Surge 必须保持“规则模式”，设备上不得加载未经审计的 Module。全局直连模式和额外 Module 都能绕过本配置自身的闭环。
+- 配置：`Surge.conf`
+- 有效规则：5546
+- DNS：AliDNS + DNSPod DoH；国内明文 DNS 用作容灾
+- 未知流量：`FINAL,Final,dns-failed`
+- Telegram：始终进入代理策略
+- APNs：已捕获的精确规则直连
+- 规则来源：本地 `Rules/` 快照；设备运行时不使用 `RULE-SET`
 
-## 当前状态
+## 使用
 
-最后审计日期：**2026-07-26**
-
-| 项目 | R10.2 |
-| --- | --- |
-| 目标平台 | Surge iOS |
-| 最低版本 | 5.14.6+ |
-| 配置段 | 5 |
-| 策略组 | 30 |
-| 有效规则 | 5545 |
-| 固定内嵌服务规则 | 4429 条，来自 22 个源文件 |
-| 固定内嵌直连规则 | Apple 166 条、Domestic 域名 882 条，另有中国 GEOIP 兜底 |
-| 外部规则 URL | 0 |
-| 动态 `policy-path` | 1 个公开占位项，需在设备私有副本替换 |
-| 可到达 `DIRECT` 的策略组 | 仅 `Apple`、`Domestic` |
-| IPv6 | `true`，VIF `auto` |
-| 系统接管 | VIF-only；不强制接管全部网络、APNs 专项及蜂窝系统服务 |
-| UDP 失效行为 | `REJECT` |
-| API、面板、Wi-Fi/热点共享 | 关闭 |
-| `Surge.conf` SHA-256 | `4ae0a9c607668d1ca3f2ebcee087752326d50cc03b42950755279ff7376f60d9` |
-
-## 导入地址
-
-开发分支：
+Raw 地址：
 
 ```text
 https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 ```
 
-`main` 是可变地址。正式部署应在审计通过并提交后，将 `main` 替换为该次完整 40 位提交号。
+导入后必须保持规则模式，不加载未经审计的 Module。将 `AllServer` 的占位 `policy-path` 替换为自己的 Sub-Store 订阅转换地址。
 
-## 使用步骤
-
-1. 下载仓库根目录的 `Surge.conf`，在设备上创建私有副本。
-2. 在 Surge 中选择“规则模式”。
-3. 在私有副本中，将 `https://example.invalid/REPLACE_WITH_SUB_STORE_URL` 替换为自己的 Sub-Store 转换订阅地址。
-4. 不要把真实节点、密码、订阅 URL 或 Token 提交到公开仓库。
-5. 名称正则只能过滤名称，不能证明外部策略不是 `direct` 别名；仅使用可信订阅源。
-6. 导入后确认 `AllServer` 已加载预期节点，并检查五个地区组均出现对应真实节点，再进行联网测试。
-
-公开版本只提供失败哨兵和不可用的订阅占位地址：
-
-```ini
-[Proxy]
-Fail-Closed = http, 127.0.0.1, 1
-```
-
-因此直接导入公开文件但没有私有节点时，境外和未知流量会连接失败，不会回落直连。
-
-## 策略闭环
-
-```text
-未知 / 未命中 / DNS 失败
-          ↓
-FINAL,Final,dns-failed
-          ↓
-Final → Proxy
-          ↓
-地区组 / AllServer
-          ↓
-已审计静态节点，或 Fail-Closed
-```
-
-- `Final` 只有 `Proxy`。
-- `Proxy`、五个地区测速组、`AllServer` 和全部境外服务组均不能到达 `DIRECT`。
-- `Domestic`、`Apple` 是仅有的直连可达组，默认分别选择明确的 `DIRECT`。
-- `[Proxy]` 中的公开失败哨兵连接 `127.0.0.1:1`，失败时没有直连备用路径。
-- 自定义 `direct`/`reject` 别名、`skip-cert-verify=true`、`sni=off` 与动态节点文件会被审计器拒绝。
-- 地区组按节点名称匹配地域；`Gemini`、`GPT`、`ChatGPT`、`Claude`、`OpenAI` 被视为能力标签，不再导致节点从地区组消失。名称明确包含“专用/解锁”的节点仍只保留在 `AllServer`。
-
-## DNS 边界
-
-R10.2 使用系统解析器和两个明确的国内传统 DNS 上游：
-
-```ini
-dns-server = system, 223.5.5.5, 119.29.29.29
-hijack-dns = *:53
-```
-
-三组解析器由 Surge 并行查询并采用最先返回的结果。加入 `system` 可降低设备位于中国大陆之外时两个国内上游同时不可达造成的整机解析失败；它不是业务流量的 DIRECT 兜底。
-
-规则层还执行：
-
-- 常见公共及国内应用 DoH 域名进入 `Proxy`。
-- 53、853、8853 端口在未被 DNS 劫持器处理时拒绝。
-- 不配置 Surge 加密 DNS，因此删除容易产生错误安全含义的 `PROTOCOL,DOH/DOH3/DOQ`。
-- 未知 HTTPS 最终进入 `Proxy`。
-
-不使用 MITM 时，配置无法识别伪装成普通 HTTPS、且部署在已经批准直连域名上的任意应用内 DoH。这是协议可见性的边界，不能用静态域名规则宣称绝对消除。
-
-## IPv4、IPv6、UDP、QUIC 与 STUN
-
-- `include-all-networks=false`，避免接管额外系统流量引发请求风暴和 Network Extension 内存终止。
-- `compatibility-mode=3` 使用 Surge 当前默认的 VIF-only 接管，避免部分 App 检测系统代理设置后拒绝联网。
-- `include-apns=false`；Surge 要求该选项与 `include-all-networks=true` 配合，稳定模式不再保留无效组合或宣称完整接管 APNs。
-- `include-cellular-services=false`，不接管 VoLTE、Wi-Fi Calling、IMS、MMS、Visual Voicemail 等蜂窝系统业务。
-- 运营商直接路由到私网的蜂窝业务可能始终位于隧道外，这是 iOS/运营商边界。
-- `ipv6=true`、`ipv6-vif=auto`；未知 IPv6 与未知 IPv4 一样最终进入代理。
-- Apple、微信和国内域名规则先分类，并为可见的 SNI/HTTP Host 启用 `extended-matching`。
-- 服务规则随后分类；未命中的目标通过自动更新的 GeoIP 数据库和 `GEOIP,CN` 判断中国大陆 IPv4/IPv6。
-- `STUN → QUIC → UDP` 守卫位于上述分类之后，因此已知国内 UDP/QUIC 可直连，境外服务仍走对应代理组，未知 UDP 仍走 `Proxy`。
-- `udp-policy-not-supported-behaviour=REJECT`，节点不支持 UDP 时直接拒绝。
-- `block-quic=all-proxy`，代理策略上的 QUIC 被阻止并由应用自行回落到 TCP，而不是 DIRECT。
-- `icmp-forwarding=false`。
-
-## Apple、APNs 与 Telegram
-
-R10.2 对已被当前接管面捕获的 APNs 保留优先代理规则：
-
-- 3 条精确 APNs 域名/后缀规则；删除会覆盖 Apple Store/CDN 的宽泛 `apple.com.edgekey.net` 关键词。
-- 5 条 Apple 官方 IPv4 网段规则。
-- 4 条 Apple 官方 IPv6 网段规则。
-- APNs 与 Telegram 长连接主机保持 Raw TCP。
-- 全部 APNs 规则位于 Apple/Domestic 直连白名单之前并固定绑定 `Proxy`。
-
-稳定模式关闭 `include-all-networks` 和 `include-apns`，所以这些规则不表示所有 APNs 流量一定进入 VIF。需要防火墙式完整接管时，应同时启用两项并单独完成真机负载测试。`Telegram.list` 仍绑定 `Telegram` 代理组。
-
-## 直连白名单清洗
-
-R10 内嵌直连敏感规则，不让远程更新获得直连权限：
-
-- `AppleCN.list`：166 条，绑定 `Apple`。
-- `WeChat.list`：删除 2 条宽泛 `USER-AGENT` 与 1 条 `IP-ASN`，保留 30 条域名规则。
-- `Direct.list`：只保留 4 个明确腾讯域名及 `goodnotesapp.com.cn`，共 5 条。
-- `ChinaDomain.list`：删除 3 条 `USER-AGENT`、13 条 DNS 服务域名和 4 条重复项，保留 847 条。
-
-以上域名规则位于境外服务快照之前，因此 `officewebapps.cn`、`snssdk.com`、`steamchina.com` 等国内规则不再被 Microsoft、TikTok 或 Games 组抢先命中。中国大陆 IP 由后置 `GEOIP,CN,Domestic` 补齐；Google、`api.goodnotescloud.com`、`fileball.app` 与 `pianyuan.org` 仍不获得国内直连。
-
-广告补充规则从 206 条收窄为 152 条，仅保留域名匹配；移除了全部 IP 拦截、阿里/腾讯等 HTTPDNS 风险地址、B站 PCDN/Tracker、微信相关关键词，以及会误杀 `deadspacegame.com`、Apple CDN 的宽泛 `adspace`/`adsdk`。
-
-## 规则供应链
-
-运行时不存在 `RULE-SET`/`DOMAIN-SET` URL。配置将 22 个代理/拒绝源文件压平为 4429 条普通 iOS 规则，并按原始顺序删除不可达重复条件。四个直连源另按上述规则清洗。4 条 Games 精确 IP 会先于 Netflix 公有云大网段写入，生成器同时删除其原位置，避免首次命中错误。
-
-`Rules/r10.lock.json` 固定：
-
-- R10.2 修正基线提交 `4d2f7d2f3acef6cc0a2efa18c44ff3ad49b92ada`。
-- 26 个运行时源文件的 SHA-256。
-- 原始有效项数量、实际内嵌数量、角色与目标策略。
-
-`Rules/upstreams.lock.json` 继续记录 19 个 blackmatrix7 服务快照的直接上游提交、文件路径、Blob、SHA-256 和本地排除项。详细许可与修改说明见 `NOTICE.md` 和 `THIRD_PARTY_LICENSES/`。
-
-## 仓库文件处理
-
-升级 R10.2 不需要删除任何已跟踪文件：
-
-- `Rules/`：保留，供生成、审计和来源追踪使用。
-- `NOTICE.md`、`THIRD_PARTY_LICENSES/`：必须保留。
-- `tools/`：已更新为 R10.2 生成器和语义审计器。
-- `.github/workflows/`：已更新为 R10.2 检查。
-- `tools/__pycache__/`：本地缓存，已由 `.gitignore` 忽略，不要上传。
-
-未被 R10 运行时加载的规则快照仍可保留作来源与比较资料；它们不会因为存在于 `Rules/` 就自动进入 Surge。
-
-## 本地审计
-
-在仓库根目录运行：
+## 自动审计
 
 ```bash
-python3 -m json.tool Rules/upstreams.lock.json >/dev/null
-python3 -m json.tool Rules/r10.lock.json >/dev/null
-python3 -m py_compile tools/*.py
-python3 tools/update_service_rules.py --verify-lock
-python3 tools/audit_rules.py Rules
-python3 tools/embed_runtime_rules.py Surge.conf --check
-python3 tools/audit_config.py Surge.conf
-python3 tools/test_audit_config.py
-python3 tools/test_stage_surge_zip.py
+python tools/audit_config.py
+python tools/audit_rules.py
+python tools/test_audit_config.py
 ```
 
-预期核心输出：
+配置发生有意修改后，先运行：
 
-```text
-PASS: verified upstream lock services=19
-PASS: Rules | files=26 active_entries=5672 locked_files=26 embedded=5477
-PASS: generated profile is current: .../Surge.conf
-PASS: Surge-Stable-Fail-Closed-R10.2.conf
-PASS: baseline + 30 security mutations
-PASS: ZIP allowlist regression cases=12
+```bash
+python tools/embed_runtime_rules.py
 ```
 
-`.github/workflows/audit.yml` 会在 push、pull request 和手动触发时执行同一套检查。
-
-## 真机验收
-
-静态审计通过不等于真机网络、通知或温度已经得到证明。至少检查：
-
-1. 全部真实节点关闭时，境外和未知目标失败且不显示本地公网出口。
-2. 微信、B站及其他已知国内 TCP/UDP/QUIC 命中 `Domestic`；未知 UDP/STUN 命中 `Proxy`。
-3. 未知 IPv4、IPv6 和域名命中 `Final → Proxy`。
-4. 已被接管的 APNs 域名与官方网段无论 `Apple` 当前选择如何都命中 `Proxy`；稳定模式不宣称完整捕获 APNs。
-5. Wi-Fi 与蜂窝网络分别测试；确认没有额外 Module、脚本、DNS 或策略订阅。
-6. 在稳定信号、非充电条件下静置至少 15 分钟记录温度、电量与事件数量。
-
-R10.2 默认采用稳定模式，不开启全网络、APNs 专项与蜂窝系统服务接管。只有在明确需要防火墙式完整接管、并完成真机负载验证时，才应同时启用 `include-all-networks` 与 `include-apns`；启用后需要重点观察每秒请求数、内存终止和 AirDrop/Xcode 等系统功能。
-
-## 许可与免责声明
-
-本仓库包含或改编了多个第三方规则来源。保留 `NOTICE.md`、上游文件头和 `THIRD_PARTY_LICENSES/`；规则名称、服务标识和网络数据不代表本项目拥有相关服务或商标。
-
-该配置不构成隐私、匿名、网络可用性或通知送达保证。设备全局出站模式、额外 Module、iOS/运营商排除项、节点实现和服务端行为均可能影响最终结果。
+随后重新执行全部审计并提交 `Rules/r10.lock.json`。
