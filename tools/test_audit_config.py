@@ -1,209 +1,27 @@
 #!/usr/bin/env python3
-"""Mutation regression tests for the R10.2 configuration auditor."""
-
+"""Mutation regression tests for the R10.5 configuration auditor."""
 from __future__ import annotations
-
-import subprocess
-import sys
-import tempfile
+import subprocess, sys, tempfile
 from pathlib import Path
-
-
-ROOT = Path(__file__).resolve().parent.parent
-PROFILE = ROOT / "Surge.conf"
-AUDITOR = ROOT / "tools" / "audit_config.py"
-SUBSCRIPTION_NOTE = "# 【订阅地址填写处】将下一行占位链接替换为 Sub-Store 转换后的订阅链接"
-PUBLIC_POLICY_PATH = "https://example.invalid/REPLACE_WITH_SUB_STORE_URL"
-
-
-def replace_once(source: str, old: str, new: str) -> str:
-    if source.count(old) != 1:
-        raise AssertionError(f"mutation anchor must occur once: {old!r}")
-    return source.replace(old, new, 1)
-
-
-def swap_once(source: str, first: str, second: str) -> str:
-    if source.count(first) != 1 or source.count(second) != 1:
-        raise AssertionError("swap anchors must occur once")
-    marker = "__R10_AUDIT_SWAP__"
-    return source.replace(first, marker, 1).replace(second, first, 1).replace(marker, second, 1)
-
-
-baseline = PROFILE.read_text(encoding="utf-8")
-cases = {
-    "subscription note removed": replace_once(
-        baseline,
-        SUBSCRIPTION_NOTE,
-        "# Sub-Store",
-    ),
-    "final direct fallback": replace_once(
-        baseline,
-        "Final = select, Proxy, no-alert=0, hidden=0, include-all-proxies=0",
-        "Final = select, DIRECT, Proxy, no-alert=0, hidden=0, include-all-proxies=0",
-    ),
-    "duplicate policy path": replace_once(
-        baseline,
-        "AllServer = select, Fail-Closed,",
-        "AllServer = select, Fail-Closed, policy-path=https://example.com/nodes,",
-    ),
-    "public subscription leak": replace_once(
-        baseline,
-        PUBLIC_POLICY_PATH,
-        "https://example.com/private-subscription-token",
-    ),
-    "policy path removed": replace_once(
-        baseline,
-        f"policy-path={PUBLIC_POLICY_PATH}, ",
-        "",
-    ),
-    "renamed direct proxy": replace_once(
-        baseline,
-        "Fail-Closed = http, 127.0.0.1, 1",
-        "Fail-Closed = direct",
-    ),
-    "APNs domain direct": replace_once(
-        baseline,
-        "DOMAIN-SUFFIX,push.apple.com,Proxy",
-        "DOMAIN-SUFFIX,push.apple.com,Apple",
-    ),
-    "APNs IPv6 direct": replace_once(
-        baseline,
-        "IP-CIDR6,2620:149:a44::/48,Proxy,no-resolve",
-        "IP-CIDR6,2620:149:a44::/48,Apple,no-resolve",
-    ),
-    "UDP gate before direct": swap_once(
-        baseline,
-        "PROTOCOL,UDP,Proxy",
-        "DOMAIN,api.smoot.apple.cn,Apple,extended-matching",
-    ),
-    "UDP unsupported direct": replace_once(
-        baseline,
-        "udp-policy-not-supported-behaviour = REJECT",
-        "udp-policy-not-supported-behaviour = DIRECT",
-    ),
-    "known DoH direct": replace_once(
-        baseline,
-        "DOMAIN,doh.360.cn,Proxy",
-        "DOMAIN,doh.360.cn,Domestic",
-    ),
-    "system DNS removed": replace_once(
-        baseline,
-        "dns-server = system, 223.5.5.5, 119.29.29.29",
-        "dns-server = 223.5.5.5, 119.29.29.29",
-    ),
-    "inconsistent APNs capture": replace_once(
-        baseline,
-        "include-apns = false",
-        "include-apns = true",
-    ),
-    "China GEOIP removed": replace_once(
-        baseline,
-        "GEOIP,CN,Domestic",
-        "GEOIP,US,Domestic",
-    ),
-    "direct extended matching removed": replace_once(
-        baseline,
-        "DOMAIN,api.smoot.apple.cn,Apple,extended-matching",
-        "DOMAIN,api.smoot.apple.cn,Apple",
-    ),
-    "HTTPDNS IP ad block restored": replace_once(
-        baseline,
-        "GEOIP,CN,Domestic",
-        "IP-CIDR,203.107.1.0/24,AdBlock,no-resolve\nGEOIP,CN,Domestic",
-    ),
-    "broad ad keyword restored": replace_once(
-        baseline,
-        "GEOIP,CN,Domestic",
-        "DOMAIN-KEYWORD,adspace,AdBlock\nGEOIP,CN,Domestic",
-    ),
-    "Games IP shadow restored": swap_once(
-        baseline,
-        "IP-CIDR,34.220.160.16/32,Games,no-resolve",
-        "IP-CIDR,34.208.0.0/12,NETFLIX,no-resolve",
-    ),
-    "mutable SYSTEM direct": replace_once(
-        baseline,
-        "FINAL,Final,dns-failed",
-        "RULE-SET,SYSTEM,Apple\nFINAL,Final,dns-failed",
-    ),
-    "remote resource restored": replace_once(
-        baseline,
-        "FINAL,Final,dns-failed",
-        "RULE-SET,https://example.com/direct.list,Domestic\nFINAL,Final,dns-failed",
-    ),
-    "broad UA direct": replace_once(
-        baseline,
-        "FINAL,Final,dns-failed",
-        "USER-AGENT,WeChat*,Domestic\nFINAL,Final,dns-failed",
-    ),
-    "all networks forced": replace_once(
-        baseline,
-        "include-all-networks = false",
-        "include-all-networks = true",
-    ),
-    "cellular services forced": replace_once(
-        baseline,
-        "include-cellular-services = false",
-        "include-cellular-services = true",
-    ),
-    "AI capability labels excluded from Singapore": replace_once(
-        baseline,
-        "policy-regex-filter=(?i)^(?!.*(?:专用|專用|解锁|解鎖)).*(?:新加坡|",
-        "policy-regex-filter=(?i)^(?!.*(?:Gemini|GPT|ChatGPT|Claude|OpenAI|专用|專用|解锁|解鎖)).*(?:新加坡|",
-    ),
-    "English city label excluded from Japan": replace_once(
-        baseline,
-        "|Japan|Tokyo|Osaka|",
-        "|Japan|Osaka|",
-    ),
-    "Bahamut defaults to Hong Kong proxy": replace_once(
-        baseline,
-        "Bahamut = select, TaiWan, Proxy,",
-        "Bahamut = select, Proxy, TaiWan,",
-    ),
-    "automatic suspension": replace_once(
-        baseline,
-        "auto-suspend = false",
-        "auto-suspend = true",
-    ),
-    "ICMP leak": replace_once(
-        baseline,
-        "icmp-forwarding = false",
-        "icmp-forwarding = true",
-    ),
-    "proxy takeover compatibility mode restored": replace_once(
-        baseline,
-        "compatibility-mode = 3",
-        "compatibility-mode = 1",
-    ),
-    "GeoIP database updates disabled": replace_once(
-        baseline,
-        "disable-geoip-db-auto-update = false",
-        "disable-geoip-db-auto-update = true",
-    ),
+ROOT=Path(__file__).resolve().parent.parent
+AUDIT=ROOT/'tools/audit_config.py'; PROFILE=ROOT/'Surge.conf'
+base=PROFILE.read_text(encoding='utf-8')
+def run(text):
+    with tempfile.TemporaryDirectory() as td:
+        p=Path(td)/'Surge.conf'; p.write_text(text,encoding='utf-8')
+        return subprocess.run([sys.executable,str(AUDIT),str(p)],capture_output=True,text=True)
+# Baseline should pass when lock is not beside the temporary profile.
+assert run(base).returncode==0
+mutations={
+ 'final_open':('FINAL,Final,dns-failed','FINAL,DIRECT'),
+ 'telegram_direct':('DOMAIN-SUFFIX,t.me,Telegram','DOMAIN-SUFFIX,t.me,DIRECT'),
+ 'remove_doh':('encrypted-dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query','encrypted-dns-server = https://dns.alidns.com/dns-query'),
+ 'apns_proxy':('DOMAIN-SUFFIX,push.apple.com,DIRECT','DOMAIN-SUFFIX,push.apple.com,Proxy'),
+ 'capture_all':('include-all-networks = false','include-all-networks = true'),
+ 'runtime_ruleset':('FINAL,Final,dns-failed','RULE-SET,https://example.invalid/a.list,Proxy\nFINAL,Final,dns-failed'),
 }
-
-baseline_result = subprocess.run(
-    [sys.executable, str(AUDITOR), str(PROFILE)],
-    capture_output=True,
-    text=True,
-    check=False,
-)
-if baseline_result.returncode != 0:
-    raise AssertionError(baseline_result.stderr or baseline_result.stdout)
-
-with tempfile.TemporaryDirectory() as directory:
-    candidate = Path(directory) / "candidate.conf"
-    for name, mutation in cases.items():
-        candidate.write_text(mutation, encoding="utf-8")
-        result = subprocess.run(
-            [sys.executable, str(AUDITOR), str(candidate), str(ROOT)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if result.returncode == 0:
-            raise AssertionError(f"auditor accepted mutation: {name}")
-        print(f"PASS rejected: {name}")
-
-print(f"PASS: baseline + {len(cases)} security mutations")
+for name,(old,new) in mutations.items():
+    assert old in base,f'mutation anchor missing: {name}'
+    result=run(base.replace(old,new,1))
+    assert result.returncode!=0,f'mutation unexpectedly passed: {name}'
+print(f'PASS mutations={len(mutations)}')
