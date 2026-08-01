@@ -3,7 +3,7 @@
   "profile": "Surge iOS Stable Fail-Closed R11 LTS",
   "generated": "2026-08-01",
   "source_repository": "shenjlngbIng/-",
-  "profile_sha256": "a083a29c8fd362fc282b17265108a8cb0a8e4f880172a0ed711f019f94f30194",
+  "profile_sha256": "f026bf5875e8b71fe52ad814f16528ae85eee0d9c7e2df5c0c5f91d7279caa91",
   "profile_lines": 5722,
   "active_rules": 5546,
   "required_invariants": {
