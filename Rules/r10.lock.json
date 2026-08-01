@@ -1,155 +1,16 @@
 {
-  "schema": 2,
-  "profile": "Surge iOS Stable Fail-Closed R10.5",
-  "generated": "2026-07-31",
+  "schema": 3,
+  "profile": "Surge iOS Stable Fail-Closed R10.6",
+  "generated": "2026-08-01",
   "source_repository": "shenjlngbIng/-",
-  "profile_sha256": "e855a5b756a0cb0a80b6f041d19f30f041b55300c4e6ed4485974af4f354c350",
-  "profile_lines": 5726,
+  "profile_sha256": "313325f324dc3970c28ee1bbb32d3e97c3e0768f0fce015abfca52058b7ce02c",
+  "profile_lines": 5727,
   "active_rules": 5546,
-  "embedded_sources": [
-    {
-      "file": "Ads_Custom_Extra.list",
-      "embedded_entries": 152,
-      "active_entries": 152,
-      "policy": "AdBlock"
-    },
-    {
-      "file": "ChatGPT.list",
-      "embedded_entries": 52,
-      "active_entries": 52,
-      "policy": "ChatGPT"
-    },
-    {
-      "file": "Claude.list",
-      "embedded_entries": 6,
-      "active_entries": 6,
-      "policy": "Claude"
-    },
-    {
-      "file": "Gemini.list",
-      "embedded_entries": 21,
-      "active_entries": 21,
-      "policy": "Gemini"
-    },
-    {
-      "file": "YouTube.list",
-      "embedded_entries": 192,
-      "active_entries": 192,
-      "policy": "YouTube"
-    },
-    {
-      "file": "Netflix.list",
-      "embedded_entries": 1154,
-      "active_entries": 1154,
-      "policy": "NETFLIX"
-    },
-    {
-      "file": "Disney.list",
-      "embedded_entries": 172,
-      "active_entries": 172,
-      "policy": "Disney+"
-    },
-    {
-      "file": "HBO.list",
-      "embedded_entries": 47,
-      "active_entries": 47,
-      "policy": "HBO"
-    },
-    {
-      "file": "PrimeVideo.list",
-      "embedded_entries": 18,
-      "active_entries": 18,
-      "policy": "PrimeVideo"
-    },
-    {
-      "file": "Emby.list",
-      "embedded_entries": 218,
-      "active_entries": 218,
-      "policy": "Emby"
-    },
-    {
-      "file": "TikTok.list",
-      "embedded_entries": 87,
-      "active_entries": 87,
-      "policy": "TikTok"
-    },
-    {
-      "file": "Bahamut.list",
-      "embedded_entries": 9,
-      "active_entries": 10,
-      "policy": "Bahamut"
-    },
-    {
-      "file": "BiliBiliIntl.list",
-      "embedded_entries": 1,
-      "active_entries": 1,
-      "policy": "Streaming"
-    },
-    {
-      "file": "Spotify.list",
-      "embedded_entries": 30,
-      "active_entries": 30,
-      "policy": "Spotify"
-    },
-    {
-      "file": "ProxyMedia.list",
-      "embedded_entries": 227,
-      "active_entries": 321,
-      "policy": "Streaming"
-    },
-    {
-      "file": "Telegram.list",
-      "embedded_entries": 51,
-      "active_entries": 51,
-      "policy": "Telegram"
-    },
-    {
-      "file": "Github.list",
-      "embedded_entries": 31,
-      "active_entries": 31,
-      "policy": "GitHub"
-    },
-    {
-      "file": "Twitter.list",
-      "embedded_entries": 33,
-      "active_entries": 33,
-      "policy": "X"
-    },
-    {
-      "file": "Google.list",
-      "embedded_entries": 693,
-      "active_entries": 705,
-      "policy": "Google"
-    },
-    {
-      "file": "OneDrive.list",
-      "embedded_entries": 16,
-      "active_entries": 16,
-      "policy": "Microsoft"
-    },
-    {
-      "file": "Microsoft.list",
-      "embedded_entries": 659,
-      "active_entries": 669,
-      "policy": "Microsoft"
-    },
-    {
-      "file": "Game.list",
-      "embedded_entries": 556,
-      "active_entries": 597,
-      "policy": "Games"
-    }
-  ],
   "required_invariants": {
     "final": "FINAL,Final,dns-failed",
-    "encrypted_dns": [
-      "https://dns.alidns.com/dns-query",
-      "https://doh.pub/dns-query"
-    ],
-    "dns_direct": [
-      "DOMAIN,dns.alidns.com,DIRECT",
-      "DOMAIN,doh.pub,DIRECT"
-    ],
+    "telegram": "forced-proxy",
+    "apns_capture": "disabled",
+    "apns_fallback": "DIRECT",
     "capture": {
       "include-all-networks": "false",
       "include-local-networks": "false",
