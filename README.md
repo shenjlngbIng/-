@@ -1,38 +1,41 @@
 # Surge iOS Stable Fail-Closed R11 LTS
 
-一套面向 Surge iOS 的公开、可审计、失败关闭型配置。项目将最终运行规则固化在 `Surge.conf` 中，并通过本地规则快照、锁文件、回归测试和 GitHub Actions 保持配置行为可验证。
+一套面向 Surge iOS 的公开、可审计、失败关闭型配置。项目将设备实际运行规则固化在 `Surge.conf` 中，并通过本地规则快照、锁文件、回归测试、校验和与 GitHub Actions 保持配置行为可验证。
 
 ## 核心特性
 
 - 未匹配流量统一进入 `FINAL,Final,dns-failed`，不默认回落到直连。
-- Telegram 域名及核心 IPv4、IPv6 网段强制进入 `Telegram` 代理策略。
+- Telegram 域名、ASN、IPv4 与 IPv6 网段强制进入 `Telegram` 代理策略。
 - `include-apns = false`，iOS 系统 APNs 长连接不由 Surge VIF 强制接管。
-- 保留 APNs 精确直连规则，作为已被捕获连接的兜底路径。
-- 使用 AliDNS 与 DNSPod DoH，并设置固定引导地址避免首次解析循环。
-- 阻断未经允许的明文 DNS、DoT 与其他常见 DNS 绕过路径。
+- 保留 APNs 精确直连规则，作为已进入规则链连接的兜底路径。
+- 使用 AliDNS 与 DNSPod DoH，并配置固定引导地址避免首次解析循环。
+- 阻断未经允许的明文 DNS、DoT 和常见 DNS 绕过路径。
 - 运行时不使用远程 `RULE-SET`，降低上游临时变化对设备行为的影响。
 - 公开仓库不保存真实订阅、代理节点、Token、密码或证书。
+- 配置、规则源、脚本、工作流和发布文件均可通过 SHA-256 校验。
 
 ## 适用环境
 
-- Surge iOS 5.14.6 或更高版本
-- 规则模式
-- Python 3.10 或更高版本，用于仓库审计
-- Sub-Store 或其他可输出 Surge 节点订阅的工具
+| 项目 | 要求 |
+|---|---|
+| Surge | iOS 5.14.6 或更高版本 |
+| 运行模式 | 规则模式 |
+| Python | 3.10 或更高版本，建议 3.12/3.13 |
+| 订阅 | Sub-Store 或其他可输出 Surge 节点订阅的工具 |
 
 ## 快速开始
 
-### 1. 导入配置
+### 导入配置
 
-在 Surge 中通过以下 Raw 地址下载配置：
+在 Surge 中通过 Raw 地址下载：
 
 ```text
 https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 ```
 
-也可以下载仓库后直接导入 `Surge.conf`。
+也可以下载仓库后直接导入根目录中的 `Surge.conf`。
 
-### 2. 配置订阅
+### 配置订阅
 
 公开配置中的 `AllServer` 使用不可路由的占位地址：
 
@@ -40,11 +43,9 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL
 ```
 
-请在自己的私有副本中替换为有效订阅地址。不要把真实订阅地址提交到公开仓库。
+请仅在自己的私有副本中替换为有效订阅地址。不要把真实订阅地址提交到公开仓库。
 
-### 3. 选择策略
-
-导入后至少检查以下策略组：
+### 检查策略组
 
 | 策略组 | 用途 | 建议 |
 |---|---|---|
@@ -74,8 +75,9 @@ Telegram 规则覆盖常见域名、ASN、IPv4 和 IPv6 网段。审计器会检
 - `t.me` 必须进入 `Telegram`。
 - 核心 Telegram IPv4 网段必须存在。
 - Telegram 相关规则不得指向 `DIRECT`。
+- `Telegram` 策略组不得包含直连路径。
 
-切换节点时，优先使用连接稳定、TCP 长连接表现良好的节点。
+切换节点时，优先使用 TCP 长连接稳定、出口变化较少的节点。
 
 ### APNs
 
@@ -85,7 +87,7 @@ Telegram 规则覆盖常见域名、ASN、IPv4 和 IPv6 网段。审计器会检
 include-apns = false
 ```
 
-系统推送通道由 iOS 自行维护，减少代理节点切换或长连接中断造成的通知延迟。配置中的 APNs 精确 `DIRECT` 规则只处理已经进入规则链的连接。
+系统推送通道由 iOS 自行维护，减少代理节点切换或长连接中断造成的通知延迟。配置中的 APNs 精确 `DIRECT` 规则仅处理已经进入规则链的连接。
 
 ### DNS
 
@@ -102,18 +104,46 @@ https://doh.pub/dns-query
 
 ```text
 .
-├── .github/workflows/       GitHub Actions
-├── Rules/                   本地规则快照与锁文件
-├── THIRD_PARTY_LICENSES/    第三方许可证
-├── tools/                   审计、嵌入与安全解包工具
-├── Surge.conf               最终运行配置
-├── README.md                使用说明
-├── CHANGELOG.md             版本记录
-├── NOTICE.md                来源和修改声明
-├── SECURITY.md              安全规范
-├── CONTRIBUTING.md          维护流程
-└── SHA256SUMS.txt            文件完整性校验
+├── .github/workflows/
+│   ├── audit.yml
+│   └── unpack.yml
+├── Rules/
+│   ├── *.list
+│   ├── r10.lock.json
+│   └── upstreams.lock.json
+├── THIRD_PARTY_LICENSES/
+├── tools/
+│   ├── audit_config.py
+│   ├── audit_rules.py
+│   ├── embed_runtime_rules.py
+│   ├── generate_checksums.py
+│   ├── stage_surge_zip.py
+│   ├── test_audit_config.py
+│   ├── test_stage_surge_zip.py
+│   └── update_service_rules.py
+├── Surge.conf
+├── README.md
+├── CHANGELOG.md
+├── NOTICE.md
+├── SECURITY.md
+├── CONTRIBUTING.md
+├── LICENSE
+└── SHA256SUMS.txt
 ```
+
+## 文件用途
+
+| 文件或目录 | 用途 |
+|---|---|
+| `Surge.conf` | Surge 最终导入和运行的主配置 |
+| `Rules/` | 本地规则快照、上游锁与配置锁 |
+| `tools/audit_config.py` | 检查配置结构、关键策略和安全不变量 |
+| `tools/audit_rules.py` | 检查规则快照、锁文件与规则数量 |
+| `tools/embed_runtime_rules.py` | 更新主配置对应的锁文件元数据 |
+| `tools/generate_checksums.py` | 重新生成 `SHA256SUMS.txt` |
+| `tools/stage_surge_zip.py` | 安全解包并限制候选 ZIP 可导入文件 |
+| `.github/workflows/audit.yml` | 推送和 PR 的自动审计 |
+| `.github/workflows/unpack.yml` | 手动验证候选 `Surge.zip` |
 
 ## 本地校验
 
@@ -127,16 +157,40 @@ python3 tools/test_stage_surge_zip.py
 sha256sum -c SHA256SUMS.txt
 ```
 
+需要更新校验和时执行：
+
+```bash
+python3 tools/generate_checksums.py
+```
+
 所有命令通过后再提交配置。
 
 ## 规则维护流程
 
 1. 修改 `Rules/*.list` 或 `Surge.conf`。
-2. 如规则源发生变化，运行对应更新或嵌入工具。
+2. 规则源发生变化时，运行对应更新或嵌入工具。
 3. 运行 `python3 tools/embed_runtime_rules.py` 更新锁文件元数据。
 4. 执行完整审计和回归测试。
-5. 重新生成 `SHA256SUMS.txt`。
-6. 检查差异，确认没有真实订阅、Token、密码、证书或私有节点。
+5. 运行 `python3 tools/generate_checksums.py`。
+6. 再次运行 `sha256sum -c SHA256SUMS.txt`。
+7. 检查差异，确认没有真实订阅、Token、密码、证书或私有节点。
+
+## GitHub Actions
+
+### Audit Surge R11 LTS
+
+在 `main` 分支推送、Pull Request 和手动触发时运行，使用 Python 3.12 与 3.13 检查：
+
+- Python 工具可编译性
+- Surge 配置不变量
+- 规则源和锁文件
+- 破坏性变更回归测试
+- ZIP 安全暂存逻辑
+- 全部 SHA-256 校验和
+
+### Validate Surge R11 LTS ZIP
+
+手动触发前，将候选文件命名为 `Surge.zip` 放在仓库根目录。工作流只解包白名单文件，并对暂存配置和规则进行审计。`Surge.zip` 属于临时文件，不应长期提交。
 
 ## 常见问题
 
@@ -154,17 +208,38 @@ sha256sum -c SHA256SUMS.txt
 
 ```bash
 python3 tools/embed_runtime_rules.py
+python3 tools/generate_checksums.py
 ```
 
-随后重新生成 `SHA256SUMS.txt` 并再次执行审计。
+随后重新执行完整审计。
+
+### SHA256SUMS 校验失败
+
+说明被校验文件已发生变化。先确认变化是有意的，再运行 `python3 tools/generate_checksums.py`，不要手工修改单个哈希值来绕过检查。
 
 ### 可以删除 Rules 目录吗
 
 不可以。设备运行时虽然不远程加载这些文件，但仓库审计、规则更新和重新嵌入依赖它们。
 
+### 可以上传 __pycache__ 或 pyc 文件吗
+
+不可以。这些是本地 Python 缓存，已由 `.gitignore` 排除。发现后应删除。
+
+## 故障排查
+
+| 现象 | 优先检查 |
+|---|---|
+| Surge 导入报语法错误 | 文件是否完整、UTF-8、LF 换行，最终规则是否存在 |
+| Telegram 无法连接 | `Telegram` 策略是否选中有效节点，核心网段是否命中 |
+| Telegram 无后台推送 | `include-apns` 是否为 `false`，系统通知权限是否开启 |
+| 所有代理服务不可用 | `AllServer` 是否仍为占位地址，订阅是否有效 |
+| CI 报重复规则 | 检查 `Surge.conf` 中是否重复嵌入规则 |
+| CI 报规则数量不一致 | 检查 `Rules/*.list` 与 `Rules/r10.lock.json` |
+| CI 报校验和失败 | 重新生成并审查 `SHA256SUMS.txt` |
+
 ## 安全说明
 
-不要向公开仓库提交以下内容：
+不要向公开仓库提交：
 
 - 真实订阅 URL 或 Sub-Store 私有接口
 - 代理节点地址、端口和凭据
@@ -173,10 +248,20 @@ python3 tools/embed_runtime_rules.py
 
 发现安全问题时，请按照 `SECURITY.md` 处理，不要在公开 Issue 中披露敏感信息。
 
-## 第三方来源与许可证
+## 版本与提交
 
-第三方规则版权归各自作者或项目所有。来源说明和许可证副本位于 `NOTICE.md` 与 `THIRD_PARTY_LICENSES/`。本仓库对上游规则进行筛选、固化和本地调整，不改变原项目的许可证要求。
+建议使用语义清晰的提交信息：
 
-## 仓库许可证
+```text
+feat: add service routing
+fix: correct Telegram routing
+ci: improve audit workflow
+docs: update usage guide
+refactor: simplify profile comments
+```
 
-本仓库自行编写的配置框架、脚本与文档采用 MIT License。第三方规则快照仍适用其原始许可证，详见 `NOTICE.md` 与 `THIRD_PARTY_LICENSES/`。
+稳定版本建议创建 GitHub Release，并附上 `Surge.conf`、版本说明和 SHA-256。
+
+## 许可证与第三方来源
+
+本仓库原创脚本、配置结构和文档采用 `LICENSE` 中的 MIT License。第三方规则和材料仍遵循各自许可证，来源与许可证副本位于 `NOTICE.md` 和 `THIRD_PARTY_LICENSES/`。
