@@ -12,27 +12,30 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Require the candidate archive
-        run: |
-          test -f Surge.zip
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require candidate archive
+        run: test -f Surge.zip
 
       - name: Stage allowlisted files safely
-        run: |
-          python3 tools/stage_surge_zip.py Surge.zip "${RUNNER_TEMP}/surge-candidate"
+        run: python tools/stage_surge_zip.py Surge.zip "${RUNNER_TEMP}/surge-candidate"
 
-      - name: Audit the staged profile
+      - name: Audit staged profile
         run: |
-          python3 tools/audit_config.py "${RUNNER_TEMP}/surge-candidate/Surge.conf"
+          python tools/audit_config.py "${RUNNER_TEMP}/surge-candidate/Surge.conf"
           if test -d "${RUNNER_TEMP}/surge-candidate/Rules"; then
-            python3 tools/audit_rules.py "${RUNNER_TEMP}/surge-candidate/Rules"
+            python tools/audit_rules.py "${RUNNER_TEMP}/surge-candidate/Rules"
           fi
 
-      - name: Upload candidate for manual review
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: Upload candidate for review
+        uses: actions/upload-artifact@v4
         with:
           name: surge-candidate-${{ github.run_id }}
           path: ${{ runner.temp }}/surge-candidate
