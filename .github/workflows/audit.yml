@@ -1,4 +1,4 @@
-name: Audit Surge R10.5 profile
+name: Audit Surge R11 LTS
 
 on:
   push:
@@ -12,14 +12,25 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Compile tools
+        run: python -m compileall -q tools
       - name: Audit configuration
         run: python tools/audit_config.py
       - name: Audit rule sources
         run: python tools/audit_rules.py
       - name: Run mutation tests
         run: python tools/test_audit_config.py
+      - name: Test ZIP staging
+        run: python tools/test_stage_surge_zip.py
+      - name: Verify checksums
+        run: sha256sum -c SHA256SUMS.txt
