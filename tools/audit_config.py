@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit Surge iOS Stable Fail-Closed R10.6 profile."""
+"""Audit Surge iOS Stable Fail-Closed R11 LTS profile."""
 from __future__ import annotations
 import hashlib, json, sys
 from pathlib import Path
@@ -50,4 +50,4 @@ if LOCK.exists() and PROFILE.resolve()==(ROOT/'Surge.conf').resolve():
     lock=json.loads(LOCK.read_text(encoding='utf-8'))
     if lock['profile_sha256']!=hashlib.sha256(text.encode()).hexdigest(): fail('lock hash stale')
     if lock['active_rules']!=len(rules): fail('lock active rule count stale')
-print(f'PASS R10.6 rules={len(rules)} sha256={hashlib.sha256(text.encode()).hexdigest()}')
+print(f'PASS R11 LTS rules={len(rules)} sha256={hashlib.sha256(text.encode()).hexdigest()}')
