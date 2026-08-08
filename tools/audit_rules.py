@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the R11 LTS profile lock and committed rule snapshots."""
+"""Validate the R12 profile lock and committed rule snapshots."""
 
 from __future__ import annotations
 
@@ -33,8 +33,19 @@ if not LOCK.is_file():
 lock = json.loads(LOCK.read_text(encoding="utf-8"))
 if lock.get("schema") != 4:
     fail(f"unsupported lock schema: {lock.get('schema')!r}")
-if lock.get("profile") != "Surge iOS Stable Fail-Closed R11 LTS":
+if lock.get("profile") != "Surge iOS Privacy + Push R12":
     fail("lock profile name mismatch")
+invariants = lock.get("required_invariants", {})
+if invariants.get("apns_capture") != "enabled":
+    fail("lock APNs capture invariant mismatch")
+if invariants.get("apns_fallback") != "ApplePush_then_DIRECT":
+    fail("lock APNs fallback invariant mismatch")
+if invariants.get("encrypted_dns") != "EncryptedDNS_then_encrypted_DIRECT":
+    fail("lock encrypted DNS invariant mismatch")
+if invariants.get("rule_order") != "AdBlock_then_service_then_ChinaDomain_then_GEOIP_CN":
+    fail("lock rule order invariant mismatch")
+if invariants.get("subscription_filter") != "测速|官方|speed":
+    fail("lock subscription filter invariant mismatch")
 
 # A staged ZIP may contain Rules without Surge.conf. In that mode, validate only
 # the rule inventory. The repository checkout additionally validates profile metadata.
@@ -55,6 +66,9 @@ if profile.is_file():
         fail("active rule count mismatch")
 
 errors: list[str] = []
+source_names = {str(item["file"]) for item in lock.get("embedded_sources", [])}
+if "APNs.list" not in source_names:
+    errors.append("APNs.list is not embedded in the lock")
 for item in lock.get("embedded_sources", []):
     filename = str(item["file"])
     path = RULES / filename
@@ -70,6 +84,6 @@ if errors:
     raise AssertionError("\n".join(errors))
 
 print(
-    f"PASS R11 LTS sources={len(lock.get('embedded_sources', []))} "
+    f"PASS R12 sources={len(lock.get('embedded_sources', []))} "
     f"rules={lock.get('active_rules')}"
 )

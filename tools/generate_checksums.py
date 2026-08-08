@@ -8,8 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "SHA256SUMS.txt"
+FIXED_OUTPUT = ROOT / "SHA256SUMS_fixed.txt"
 EXCLUDED_PARTS = {".git", "__pycache__"}
-EXCLUDED_NAMES = {"SHA256SUMS.txt", "Surge.zip"}
+EXCLUDED_NAMES = {"SHA256SUMS.txt", "SHA256SUMS_fixed.txt", "Surge.zip"}
 EXCLUDED_SUFFIXES = {".pyc", ".zip"}
 
 
@@ -28,4 +29,5 @@ for path in sorted((path for path in ROOT.rglob("*") if included(path)), key=lam
     entries.append(f"{digest}  {path.relative_to(ROOT).as_posix()}")
 
 OUTPUT.write_text("\n".join(entries) + "\n", encoding="utf-8")
-print(f"updated {OUTPUT}: files={len(entries)}")
+FIXED_OUTPUT.write_text("\n".join(entries) + "\n", encoding="utf-8")
+print(f"updated checksums: files={len(entries)}")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mutation tests for the R11 LTS configuration auditor."""
+"""Mutation tests for the R12 configuration auditor."""
 from __future__ import annotations
 
 import subprocess
@@ -32,11 +32,24 @@ mutations = {
         "\nDOMAIN-SUFFIX,t.me,Telegram\n",
         "\nDOMAIN-SUFFIX,t.me,DIRECT\n",
     ),
-    "apns_proxy": (
+    "apns_direct": (
+        "\nDOMAIN-SUFFIX,push.apple.com,ApplePush\n",
         "\nDOMAIN-SUFFIX,push.apple.com,DIRECT\n",
-        "\nDOMAIN-SUFFIX,push.apple.com,Proxy\n",
     ),
-    "capture_apns": ("\ninclude-apns = false\n", "\ninclude-apns = true\n"),
+    "capture_apns": ("\ninclude-apns = true\n", "\ninclude-apns = false\n"),
+    "capture_all": ("\ninclude-all-networks = true\n", "\ninclude-all-networks = false\n"),
+    "dns_direct": (
+        "\nPROTOCOL,DOH,EncryptedDNS\n",
+        "\nPROTOCOL,DOH,DIRECT\n",
+    ),
+    "china_before_ad": (
+        "\nDOMAIN-KEYWORD,-ad.a.yximgs.com,AdBlock\n",
+        "\nDOMAIN,acg.tv,Domestic,extended-matching\nDOMAIN-KEYWORD,-ad.a.yximgs.com,AdBlock\n",
+    ),
+    "allserver_filter": (
+        "|测速|官方|speed|USED|",
+        "|USED|",
+    ),
     "runtime_ruleset": (
         "\nFINAL,Final,dns-failed\n",
         "\nRULE-SET,https://example.invalid/a.list,Proxy\nFINAL,Final,dns-failed\n",
