@@ -80,8 +80,12 @@ mutations = {
         "include-all-proxies=false",
     ),
     "allserver_remote_path": (
-        "AllServer = fallback, Fail-Closed, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true",
+        "AllServer = fallback, Fail-Closed, policy-path=YOUR_SUBSTORE_SURGE_URL, update-interval=3600, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true",
         "AllServer = fallback, Fail-Closed, policy-path=https://example.invalid/sub, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true",
+    ),
+    "allserver_placeholder_removed": (
+        "policy-path=YOUR_SUBSTORE_SURGE_URL, ",
+        "",
     ),
     "runtime_ruleset": (
         "\nFINAL,Final,dns-failed\n",

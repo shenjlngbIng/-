@@ -54,8 +54,9 @@ if all_server_parts[:2] != ['fallback', 'fail-closed']:
     fail('AllServer must start with fallback, Fail-Closed')
 if 'include-all-proxies=true' not in all_server_parts:
     fail('AllServer must collect proxies imported into [Proxy]')
-if any(part.startswith('policy-path=') for part in all_server_parts):
-    fail('AllServer must not depend on a remote policy-path')
+policy_paths=[part for part in all_server_parts if part.startswith('policy-path=')]
+if policy_paths != ['policy-path=your_substore_surge_url']:
+    fail('AllServer must contain exactly one subscription placeholder policy-path')
 if 'sub.store' in all_server.lower() or 'example.invalid' in all_server.lower():
     fail('AllServer contains an unsafe or placeholder subscription URL')
 required_rules = [

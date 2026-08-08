@@ -44,7 +44,7 @@ if invariants.get("encrypted_dns") != "EncryptedDNS_direct_no_proxy_hostname_loo
     fail("lock encrypted DNS invariant mismatch")
 if invariants.get("rule_order") != "AdBlock_then_service_then_ChinaDomain_then_GEOIP_CN":
     fail("lock rule order invariant mismatch")
-if invariants.get("subscription_import") != "local_proxy_section_only":
+if invariants.get("subscription_import") != "single_substore_policy_path_placeholder":
     fail("lock subscription import invariant mismatch")
 
 # A staged ZIP may contain Rules without Surge.conf. In that mode, validate only
