@@ -7,7 +7,8 @@
 - APNs 改为独立 `ApplePush` Fallback，代理优先、直连故障回落。
 - 启用 `include-all-networks` 与 `include-apns`，覆盖移动数据下的系统推送。
 - 加入 APNs 本地快照，并同步嵌入 `Surge.conf`，避免运行时依赖远程规则。
-- 加密 DNS 改用 Cloudflare 与 Quad9 IP 端点，按 `EncryptedDNS` 代理优先、加密直连回落。
+- 加密 DNS 使用 Cloudflare 与 Quad9 IP 端点，Surge 自身请求直连，避免域名节点造成解析循环。
+- 增加 `223.5.5.5` 与 `114.114.114.114` 作为 DNS 引导地址。
 - 保持 Telegram 强制代理及既有国内外分流，不引入全量 Apple 代理规则。
 - 修正 `ChinaDomain` 位于 AdBlock 前导致的广告规则优先级问题。
 - 补充 `AllServer` 对测速、官方和 speed 节点的过滤。

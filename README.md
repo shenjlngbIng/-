@@ -105,16 +105,23 @@ APNs 单独进入 `ApplePush` Fallback，优先使用 `Proxy`，代理不可用�
 
 ### DNS
 
-默认加密 DNS：
+DNS 引导：
+
+```text
+223.5.5.5
+114.114.114.114
+```
+
+加密 DNS：
 
 ```text
 https://1.1.1.1/dns-query
 https://9.9.9.9/dns-query
 ```
 
-`encrypted-dns-follow-outbound-mode = true` 使加密 DNS 按 `EncryptedDNS` 组出站，代理优先、加密 DoH 直连回落。端口 53、853 和 8853 的非授权请求会被阻断，避免应用绕过配置中的解析路径。
+`encrypted-dns-follow-outbound-mode = false` 让 Surge 自身的加密 DNS 直连，避免代理节点使用域名时产生 DNS 循环。DNS 引导地址仅用于基础解析与连通性检查，主解析仍使用加密 DNS。端口 53、853 和 8853 的非授权请求会被阻断。
 
-若 DNS 测试仍显示运营商解析器，先确认当前载入的是新版 `Surge.conf`，再暂时关闭会修改 DNS、Host 或规则的模块并重新载入。不要通过增加 `system`、国内明文 DNS 或全量 `.cn` 直连规则处理，否则会削弱加密 DNS 和国内外分流。
+若 DNS 测试仍显示运营商解析器，先确认当前载入的是新版 `Surge.conf`，再暂时关闭会修改 DNS、Host 或规则的模块并重新载入。不要加入 `system` 上游或全量 `.cn` 直连规则。
 
 ## 仓库结构
 

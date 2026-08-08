@@ -6,7 +6,7 @@
 - 不引入未经固定版本的远程脚本或运行时 `RULE-SET`。
 - 不为 Telegram 增加 `DIRECT` 路径。
 - 不把全部 Apple 流量改为代理；APNs 只进入 `ApplePush` Fallback。
-- DNS 必须保持加密出站，禁止恢复 `system` 上游或明文直连绕过。
+- DNS 主解析必须保持加密；允许使用指定国内 DNS 作为引导，不使用 `system` 上游。
 - 保持 AdBlock 位于 `ChinaDomain` 前，禁止加入全量 `.cn` 直连规则。
 - `AllServer` 过滤词变更必须说明原因，避免误删可用节点。
 - 不把 `Final` 改为默认直连。
