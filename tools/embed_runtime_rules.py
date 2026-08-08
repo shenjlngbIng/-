@@ -30,7 +30,7 @@ lock.update({
         'encrypted_dns': 'EncryptedDNS_domestic_direct_no_proxy_hostname_loop',
         'rule_order': 'AdBlock_then_service_then_ChinaDomain_then_GEOIP_CN',
         'subscription_import': 'single_substore_policy_path_placeholder',
-        'substore_rewrite': 'embedded_official_substore_mitm_script',
+        'substore_rewrite': 'embedded_pinned_substore_mitm_script',
         'capture': {
             'include-all-networks': 'true',
             'include-local-networks': 'false',

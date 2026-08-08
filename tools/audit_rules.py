@@ -46,7 +46,7 @@ if invariants.get("rule_order") != "AdBlock_then_service_then_ChinaDomain_then_G
     fail("lock rule order invariant mismatch")
 if invariants.get("subscription_import") != "single_substore_policy_path_placeholder":
     fail("lock subscription import invariant mismatch")
-if invariants.get("substore_rewrite") != "embedded_official_substore_mitm_script":
+if invariants.get("substore_rewrite") != "embedded_pinned_substore_mitm_script":
     fail("lock Sub-Store rewrite invariant mismatch")
 
 # A staged ZIP may contain Rules without Surge.conf. In that mode, validate only

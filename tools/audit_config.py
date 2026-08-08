@@ -50,9 +50,13 @@ if 'Sub-Store Core' not in scripts or 'type=http-request' not in core or core_pa
     fail('embedded Sub-Store Core rewrite is missing or changed')
 if 'Sub-Store Simple' not in scripts or 'type=http-request' not in simple or 'pattern=^https?:\\/\\/sub\\.store' not in simple:
     fail('embedded Sub-Store Simple rewrite is missing or changed')
+expected_scripts = {
+    'Sub-Store Core': 'script-path=https://cdn.jsdelivr.net/gh/sub-store-org/Sub-Store@b43580e93e3ca2171d62ab17d1806afdc5fadd01/sub-store-1.min.js',
+    'Sub-Store Simple': 'script-path=https://cdn.jsdelivr.net/gh/sub-store-org/Sub-Store@b43580e93e3ca2171d62ab17d1806afdc5fadd01/sub-store-0.min.js',
+}
 for name,value in (('Sub-Store Core',core),('Sub-Store Simple',simple)):
-    if 'script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/' not in value:
-        fail(f'{name} must use the official Sub-Store release script')
+    if expected_scripts[name] not in value:
+        fail(f'{name} must use the repository-pinned Sub-Store script')
 groups=kv(sec['Proxy Group'],'Proxy Group')
 if len(groups)!=32: fail(f'expected 32 groups, got {len(groups)}')
 rules=active(sec['Rule'])
