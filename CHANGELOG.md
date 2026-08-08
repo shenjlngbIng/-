@@ -6,6 +6,7 @@
 
 - 将订阅入口固定为 `[Proxy Group]` 中 `AllServer` 的单个 `policy-path` 占位符。
 - 只需替换 `YOUR_SUBSTORE_SURGE_URL`，节点会由 `AllServer` 自动拉取并交给地区组筛选。
+- 移除 `sub.store = 127.0.0.1` Host 映射，避免远程订阅请求被送到本机而返回 404。
 - 公开文件不写入真实订阅地址，审计器只允许保留占位符，真实 URL 必须留在 Surge 本地。
 - 同步更新 README、锁文件、审计器、回归测试、发布清单和完整 ZIP。
 

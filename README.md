@@ -258,7 +258,7 @@ dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server �
 - 53、853、8853 等未经规则允许的端口被拒绝。
 - 常见公共 DNS 域名被指向 Proxy，避免应用绕过主解析路径。
 
-如果日志提示“加密 DNS 请求被代理策略匹配，可能导致循环”，优先检查代理节点的主机名是否为域名、当前 DNS 规则是否被模块覆盖，以及 encrypted-dns-follow-outbound-mode 是否被改回 true。配置中的 sub.store = 127.0.0.1 和 DOMAIN,sub.store,DIRECT 是为了避免重写域名误进代理链路，不要随意删除。
+如果日志提示“加密 DNS 请求被代理策略匹配，可能导致循环”，优先检查代理节点的主机名是否为域名、当前 DNS 规则是否被模块覆盖，以及 encrypted-dns-follow-outbound-mode 是否被改回 true。订阅域名不应在 [Host] 中映射到 127.0.0.1，DOMAIN,sub.store,DIRECT 用于让远程订阅直连。
 
 ## 常见故障排查
 
@@ -290,7 +290,7 @@ dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server �
 这类提示通常表示代理节点主机名和加密 DNS 请求被同一代理策略同时匹配。先停用修改 DNS、Host、重写或策略的模块，重新载入公开配置，再确认下面几项。
 
 - DOMAIN,sub.store,DIRECT 仍在局域网规则之后。
-- sub.store = 127.0.0.1 没有被第三方 Host 覆盖。
+- [Host] 中没有把 sub.store 映射到 127.0.0.1。
 - encrypted-dns-follow-outbound-mode=false 没有被覆盖。
 - 代理节点主机名可以直接解析，或为个人配置增加明确且安全的 DNS 映射。
 
