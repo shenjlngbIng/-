@@ -3,8 +3,8 @@
   "profile": "Surge iOS Privacy + Push R12",
   "generated": "2026-08-08",
   "source_repository": "shenjlngbIng/-",
-  "profile_sha256": "7682729b42dc0976132301943321497fe71bb850cf7ea70ee084108723b8eb37",
-  "profile_lines": 5728,
+  "profile_sha256": "a90136835fc0a00af6355bdd413848f66858cca371f49c32a1a05ac4305997a6",
+  "profile_lines": 5727,
   "active_rules": 5551,
   "required_invariants": {
     "final": "FINAL,Final,dns-failed",
