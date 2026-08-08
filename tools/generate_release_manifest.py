@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the deterministic file manifest shipped with the R12.5 release."""
+"""Generate the deterministic file manifest shipped with the R12 release."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ files = sorted(
     key=lambda path: path.relative_to(ROOT).as_posix(),
 )
 lines = [
-    "Surge iOS Privacy + Push R12.5 release manifest",
+    "Surge iOS Privacy + Push R12 release manifest",
     "Generated: 2026-08-08",
     f"Files: {len(files)}",
     "",

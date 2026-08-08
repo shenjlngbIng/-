@@ -35,12 +35,6 @@ def normalized_target(name: str) -> PurePosixPath | None:
         return target
     if len(target.parts) == 2 and target.parts[0] == "THIRD_PARTY_LICENSES" and target.suffix == ".txt":
         return target
-    if (
-        len(target.parts) == 3
-        and target.parts[:2] == ("Vendor", "Sub-Store")
-        and target.suffix in {".js", ".md"}
-    ):
-        return target
     raise ValueError(f"file is outside the import allowlist: {name!r}")
 
 

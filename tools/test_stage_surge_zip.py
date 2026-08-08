@@ -15,9 +15,6 @@ def main() -> int:
         "Rules/Ads_Custom_Extra.list": "Rules/Ads_Custom_Extra.list",
         "Rules/upstreams.lock.json": "Rules/upstreams.lock.json",
         "Rules/r10.lock.json": "Rules/r10.lock.json",
-        "Vendor/Sub-Store/README.md": "Vendor/Sub-Store/README.md",
-        "Vendor/Sub-Store/sub-store-0.min.js": "Vendor/Sub-Store/sub-store-0.min.js",
-        "Vendor/Sub-Store/sub-store-1.min.js": "Vendor/Sub-Store/sub-store-1.min.js",
         "Surge/NOTICE.md": "NOTICE.md",
         "Surge-R10-Candidate/MIGRATION.md": "MIGRATION.md",
         "Surge-R12-Candidate/MIGRATION.md": "MIGRATION.md",
@@ -31,8 +28,6 @@ def main() -> int:
         "/Surge.conf",
         "tools/audit_config.py",
         "Rules/lock.yaml",
-        "Vendor/Sub-Store/other.txt",
-        "Vendor/Other/sub-store-0.min.js",
         "a\\b",
     )
     for source in rejected:

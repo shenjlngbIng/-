@@ -40,14 +40,8 @@ if invariants.get("apns_capture") != "enabled":
     fail("lock APNs capture invariant mismatch")
 if invariants.get("apns_fallback") != "ApplePush_then_DIRECT":
     fail("lock APNs fallback invariant mismatch")
-if invariants.get("encrypted_dns") != "EncryptedDNS_domestic_direct_no_proxy_hostname_loop":
+if invariants.get("encrypted_dns") != "EncryptedDNS_then_encrypted_DIRECT":
     fail("lock encrypted DNS invariant mismatch")
-if invariants.get("rule_order") != "AdBlock_then_service_then_ChinaDomain_then_GEOIP_CN":
-    fail("lock rule order invariant mismatch")
-if invariants.get("subscription_import") != "single_substore_policy_path_placeholder":
-    fail("lock subscription import invariant mismatch")
-if invariants.get("substore_rewrite") != "embedded_pinned_substore_mitm_script":
-    fail("lock Sub-Store rewrite invariant mismatch")
 
 # A staged ZIP may contain Rules without Surge.conf. In that mode, validate only
 # the rule inventory. The repository checkout additionally validates profile metadata.
