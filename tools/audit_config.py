@@ -37,6 +37,8 @@ g=kv(sec['General'],'General')
 required={'include-all-networks':'true','include-local-networks':'false','include-apns':'true','include-cellular-services':'false','ipv6':'true','compatibility-mode':'3','hijack-dns':'*:53','allow-dns-svcb':'false','use-local-host-item-for-proxy':'false','encrypted-dns-follow-outbound-mode':'false','udp-policy-not-supported-behaviour':'REJECT','block-quic':'all-proxy'}
 for k,v in required.items():
     if g.get(k)!=v: fail(f'[General] {k}: expected {v!r}, got {g.get(k)!r}')
+if any(line.lower().replace(' ','').startswith('sub.store=') for line in active(sec['Host'])):
+    fail('sub.store must not be mapped to a local IP when policy-path uses sub.store')
 groups=kv(sec['Proxy Group'],'Proxy Group')
 if len(groups)!=32: fail(f'expected 32 groups, got {len(groups)}')
 rules=active(sec['Rule'])
