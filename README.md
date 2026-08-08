@@ -241,13 +241,13 @@ include-local-networks=false 保持局域网流量不被 Surge 接管。使用 A
 
 ```ini
 dns-server = 223.5.5.5, 114.114.114.114
-encrypted-dns-server = https://1.1.1.1/dns-query, https://9.9.9.9/dns-query
+encrypted-dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query
 encrypted-dns-follow-outbound-mode = false
 hijack-dns = *:53
 allow-dns-svcb = false
 ```
 
-dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server 是主用的加密 DNS 端点。encrypted-dns-follow-outbound-mode=false 表示 Surge 自身访问加密 DNS 时不跟随当前代理出口，避免代理节点的域名解析再次依赖同一个代理，形成 DNS 循环。
+dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server 是主用的国内可达加密 DNS 端点。encrypted-dns-follow-outbound-mode=false 表示 Surge 自身访问加密 DNS 时直连，不跟随当前代理出口，避免代理节点的域名解析再次依赖同一个代理，形成 DNS 循环。这里不使用海外 1.1.1.1/9.9.9.9 直连，避免中国移动等网络下出现请求超时。
 
 这并不等于所有应用流量都改为直连。它只约束 Surge 自己建立加密 DNS 连接的出口方式，普通应用请求仍按 [Rule] 和策略组分流。
 
@@ -258,7 +258,7 @@ dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server �
 - 53、853、8853 等未经规则允许的端口被拒绝。
 - 常见公共 DNS 域名被指向 Proxy，避免应用绕过主解析路径。
 
-如果日志提示“加密 DNS 请求被代理策略匹配，可能导致循环”，优先检查代理节点的主机名是否为域名、当前 DNS 规则是否被模块覆盖，以及 encrypted-dns-follow-outbound-mode 是否被改回 true。订阅域名不应在 [Host] 中映射到 127.0.0.1，DOMAIN,sub.store,DIRECT 用于让远程订阅直连。
+如果日志提示“加密 DNS 请求被代理策略匹配，可能导致循环”，优先检查代理节点的主机名是否为域名、当前 DNS 规则是否被模块覆盖，以及 encrypted-dns-follow-outbound-mode 是否被改回 true。订阅域名不应在 [Host] 中映射到 127.0.0.1，DOMAIN,sub.store,DIRECT 用于让远程订阅按当前网络直连访问。
 
 ## 常见故障排查
 
