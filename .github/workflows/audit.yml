@@ -1,4 +1,4 @@
-name: Audit Surge R11 LTS
+name: Audit Surge R12
 
 on:
   push:
@@ -47,5 +47,12 @@ jobs:
       - name: Test ZIP staging
         run: python tools/test_stage_surge_zip.py
 
+      - name: Verify release manifest
+        run: |
+          python tools/generate_release_manifest.py
+          git diff --exit-code -- RELEASE_MANIFEST.txt
+
       - name: Verify checksums
-        run: sha256sum -c SHA256SUMS.txt
+        run: |
+          sha256sum -c SHA256SUMS.txt
+          cmp --silent SHA256SUMS.txt SHA256SUMS_fixed.txt
