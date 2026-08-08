@@ -1,4 +1,4 @@
-# Surge iOS Stable Fail-Closed R11 LTS
+# Surge iOS Privacy + Push R12
 
 一套面向 Surge iOS 的公开、可审计、失败关闭型配置。项目将设备实际运行规则固化在 `Surge.conf` 中，并通过本地规则快照、锁文件、回归测试、校验和与 GitHub Actions 保持配置行为可验证。
 
@@ -6,11 +6,11 @@
 
 - 未匹配流量统一进入 `FINAL,Final,dns-failed`，不默认回落到直连。
 - Telegram 域名、ASN、IPv4 与 IPv6 网段强制进入 `Telegram` 代理策略。
-- `include-apns = false`，iOS 系统 APNs 长连接不由 Surge VIF 强制接管。
-- 保留 APNs 精确直连规则，作为已进入规则链连接的兜底路径。
-- 使用 AliDNS 与 DNSPod DoH，并配置固定引导地址避免首次解析循环。
+- APNs 使用独立 `ApplePush` Fallback，代理可用时走代理，故障时回落直连。
+- `include-all-networks = true` 与 `include-apns = true`，覆盖 Wi-Fi 和移动数据下的系统推送。
+- 使用 Cloudflare 与 Quad9 IP 端点 DoH；正常情况下加密 DNS 走 `EncryptedDNS`，故障时仅回落到加密 DoH 直连。
 - 阻断未经允许的明文 DNS、DoT 和常见 DNS 绕过路径。
-- 运行时不使用远程 `RULE-SET`，降低上游临时变化对设备行为的影响。
+- 运行时不使用远程 `RULE-SET`，降低上游临时变化对设备行为的影响；APNs 快照保存在 `Rules/APNs.list`。
 - 公开仓库不保存真实订阅、代理节点、Token、密码或证书。
 - 配置、规则源、脚本、工作流和发布文件均可通过 SHA-256 校验。
 
@@ -51,6 +51,8 @@ policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL
 |---|---|---|
 | `Proxy` | 默认代理出口 | 选择稳定地区组或具体节点 |
 | `Telegram` | Telegram 流量 | 保持代理，不要加入 `DIRECT` |
+| `ApplePush` | iOS APNs 推送 | `Proxy` 优先，`DIRECT` 故障回落 |
+| `EncryptedDNS` | Surge 加密 DNS | `Proxy` 优先，`DIRECT` 仅加密回落 |
 | `Apple` | Apple 常规服务 | 默认 `DIRECT`，按网络环境调整 |
 | `Domestic` | 国内流量 | 默认 `DIRECT` |
 | `Final` | 未匹配流量 | 保持仅指向 `Proxy` |
@@ -68,6 +70,12 @@ FINAL,Final,dns-failed
 
 `Final` 策略组只提供代理路径。新增服务未被规则覆盖时，会进入受控代理出口，而不是无条件直连。
 
+### 规则优先级
+
+规则按从上到下匹配。广告规则位于 `ChinaDomain` 前面，避免国内域名先走 `Domestic` 而绕过广告拦截；`ChinaDomain` 位于 `GEOIP,CN,Domestic` 前面，作为国内精选规则，最后再由 GeoIP 兜底。
+
+`AllServer` 会过滤 `测速`、`官方`、`speed` 等非节点条目，不改变实际流量分流。
+
 ### Telegram
 
 Telegram 规则覆盖常见域名、ASN、IPv4 和 IPv6 网段。审计器会检查：
@@ -84,21 +92,29 @@ Telegram 规则覆盖常见域名、ASN、IPv4 和 IPv6 网段。审计器会检
 配置使用：
 
 ```ini
-include-apns = false
+include-all-networks = true
+include-apns = true
 ```
 
-系统推送通道由 iOS 自行维护，减少代理节点切换或长连接中断造成的通知延迟。配置中的 APNs 精确 `DIRECT` 规则仅处理已经进入规则链的连接。
+APNs 单独进入 `ApplePush` Fallback，优先使用 `Proxy`，代理不可用时回落 `DIRECT`，避免代理故障时整机收不到通知。APNs 规则快照位于 `Rules/APNs.list`，同时已嵌入 `Surge.conf`。
+
+修改配置后重新载入 Surge；移动数据推送依赖 `include-apns = true`。若仍无通知，可开关一次飞行模式，让系统重建 APNs 长连接。
+
+不需要额外脚本或模块。未采用全量 Apple 代理、`akadns.net` 泛域名或 `apple.com.edgekey.net` 关键词，避免改变普通 Apple 及国内服务分流。
+`include-local-networks = false` 保持局域网不被接管；若使用 AirDrop 或 Xcode，需留意 `include-all-networks` 扩大接管范围的系统副作用。
 
 ### DNS
 
 默认加密 DNS：
 
 ```text
-https://dns.alidns.com/dns-query
-https://doh.pub/dns-query
+https://1.1.1.1/dns-query
+https://9.9.9.9/dns-query
 ```
 
-`[Host]` 中固定了引导 IP。端口 53、853 和 8853 的非授权请求会被阻断，常见第三方加密 DNS 域名按规则进入代理，避免应用绕过配置中的解析路径。
+`encrypted-dns-follow-outbound-mode = true` 使加密 DNS 按 `EncryptedDNS` 组出站，代理优先、加密 DoH 直连回落。端口 53、853 和 8853 的非授权请求会被阻断，避免应用绕过配置中的解析路径。
+
+若 DNS 测试仍显示运营商解析器，先确认当前载入的是新版 `Surge.conf`，再暂时关闭会修改 DNS、Host 或规则的模块并重新载入。不要通过增加 `system`、国内明文 DNS 或全量 `.cn` 直连规则处理，否则会削弱加密 DNS 和国内外分流。
 
 ## 仓库结构
 
@@ -109,6 +125,7 @@ https://doh.pub/dns-query
 │   └── unpack.yml
 ├── Rules/
 │   ├── *.list
+│   ├── APNs.list
 │   ├── r10.lock.json
 │   └── upstreams.lock.json
 ├── THIRD_PARTY_LICENSES/
@@ -116,6 +133,7 @@ https://doh.pub/dns-query
 │   ├── audit_config.py
 │   ├── audit_rules.py
 │   ├── embed_runtime_rules.py
+│   ├── generate_release_manifest.py
 │   ├── generate_checksums.py
 │   ├── stage_surge_zip.py
 │   ├── test_audit_config.py
@@ -128,6 +146,7 @@ https://doh.pub/dns-query
 ├── SECURITY.md
 ├── CONTRIBUTING.md
 ├── LICENSE
+├── RELEASE_MANIFEST.txt
 └── SHA256SUMS.txt
 ```
 
@@ -140,6 +159,7 @@ https://doh.pub/dns-query
 | `tools/audit_config.py` | 检查配置结构、关键策略和安全不变量 |
 | `tools/audit_rules.py` | 检查规则快照、锁文件与规则数量 |
 | `tools/embed_runtime_rules.py` | 更新主配置对应的锁文件元数据 |
+| `tools/generate_release_manifest.py` | 生成发布文件清单与哈希 |
 | `tools/generate_checksums.py` | 重新生成 `SHA256SUMS.txt` |
 | `tools/stage_surge_zip.py` | 安全解包并限制候选 ZIP 可导入文件 |
 | `.github/workflows/audit.yml` | 推送和 PR 的自动审计 |
@@ -154,12 +174,14 @@ python3 tools/audit_config.py
 python3 tools/audit_rules.py
 python3 tools/test_audit_config.py
 python3 tools/test_stage_surge_zip.py
+python3 tools/generate_release_manifest.py
 sha256sum -c SHA256SUMS.txt
 ```
 
-需要更新校验和时执行：
+需要更新发布清单和校验和时执行：
 
 ```bash
+python3 tools/generate_release_manifest.py
 python3 tools/generate_checksums.py
 ```
 
@@ -177,7 +199,7 @@ python3 tools/generate_checksums.py
 
 ## GitHub Actions
 
-### Audit Surge R11 LTS
+### Audit Surge R12
 
 在 `main` 分支推送、Pull Request 和手动触发时运行，使用 Python 3.12 与 3.13 检查：
 
@@ -188,7 +210,7 @@ python3 tools/generate_checksums.py
 - ZIP 安全暂存逻辑
 - 全部 SHA-256 校验和
 
-### Validate Surge R11 LTS ZIP
+### Validate Surge R12 ZIP
 
 手动触发前，将候选文件命名为 `Surge.zip` 放在仓库根目录。工作流只解包白名单文件，并对暂存配置和规则进行审计。`Surge.zip` 属于临时文件，不应长期提交。
 
@@ -196,7 +218,7 @@ python3 tools/generate_checksums.py
 
 ### Telegram 能联网但没有后台通知
 
-确认 `include-apns = false`，重新载入配置并重启 Surge 与 Telegram。不要把 APNs 强制绑定到会自动切换的代理策略组。
+确认 `include-all-networks = true`、`include-apns = true`，并检查 `ApplePush` 是否有可用代理。重新载入配置并重启 Surge 与 Telegram；不要把 APNs 规则改成固定 `DIRECT`。
 
 ### 导入后没有节点
 
@@ -231,7 +253,7 @@ python3 tools/generate_checksums.py
 |---|---|
 | Surge 导入报语法错误 | 文件是否完整、UTF-8、LF 换行，最终规则是否存在 |
 | Telegram 无法连接 | `Telegram` 策略是否选中有效节点，核心网段是否命中 |
-| Telegram 无后台推送 | `include-apns` 是否为 `false`，系统通知权限是否开启 |
+| Telegram 无后台推送 | `include-all-networks` 与 `include-apns` 是否为 `true`，`ApplePush` 是否有可用代理 |
 | 所有代理服务不可用 | `AllServer` 是否仍为占位地址，订阅是否有效 |
 | CI 报重复规则 | 检查 `Surge.conf` 中是否重复嵌入规则 |
 | CI 报规则数量不一致 | 检查 `Rules/*.list` 与 `Rules/r10.lock.json` |

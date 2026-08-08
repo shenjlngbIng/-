@@ -1,3 +1,7 @@
+Surge iOS Privacy + Push R12 release manifest
+Generated: 2026-08-08
+Files: 50
+
 182169f45d88dfc0ac70215f7b9689d4b258a534b0b71c0efe9084043b8f40c6  .github/workflows/audit.yml
 2773a239886bc9b11f95a00a51cd477adc761fbfce7a3e99c3bbf3c9cdfe8dd3  .github/workflows/unpack.yml
 dba853d3f3f7d6c1532fc1204109c43442cd4cad9013040a94589d0a1c08e5f6  .gitignore
@@ -6,7 +10,6 @@ dba853d3f3f7d6c1532fc1204109c43442cd4cad9013040a94589d0a1c08e5f6  .gitignore
 a0dd218fce669d4785b07111071210a9472f5880adea68942f0b91234f839186  LICENSE
 8715b0535db1fa5467e8e0014175af5750dcd1bc0b40a81c864fc28ef7b85df5  NOTICE.md
 e0bcfa35a1a02a6460549dd9446fc3853758d7b9c66e0ffa916a862795ab1e64  README.md
-a0accc11ef43d49ad3c97e6cb8e00f667fdbf4675de996c3dd3e072065fd1f72  RELEASE_MANIFEST.txt
 244d78195539f818f15cdd871e2512fa350327eaf6832aa5c3fd06ebb331031b  Rules/APNs.list
 8aa0ee74294e2ddfc23429930eb480c820e99e926fe2badacec1eacd40a7403f  Rules/Ads_Custom_Extra.list
 4e9c6a61c0664915fc7ef3e84779cd0baae8cc9236aed017f696570a3342b95f  Rules/AppleCN.list

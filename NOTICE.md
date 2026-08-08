@@ -1,8 +1,8 @@
 # 来源与本地修改
 
-更新日期：2026-08-01
+更新日期：2026-08-08
 
-本仓库发布 Surge iOS Stable Fail-Closed R11 LTS 配置及维护工具。`Surge.conf` 中的第三方规则版权归各自作者或项目所有，相关许可证副本位于 `THIRD_PARTY_LICENSES/`。
+本仓库发布 Surge iOS Privacy + Push R12 配置及维护工具。`Surge.conf` 中的第三方规则版权归各自作者或项目所有，相关许可证副本位于 `THIRD_PARTY_LICENSES/`。
 
 本仓库的原创维护内容包括：
 
