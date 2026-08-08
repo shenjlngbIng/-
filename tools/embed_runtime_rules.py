@@ -29,7 +29,7 @@ lock.update({
         'apns_fallback': 'ApplePush_then_DIRECT',
         'encrypted_dns': 'EncryptedDNS_direct_no_proxy_hostname_loop',
         'rule_order': 'AdBlock_then_service_then_ChinaDomain_then_GEOIP_CN',
-        'subscription_filter': '测速|官方|speed',
+        'subscription_import': 'local_proxy_section_only',
         'capture': {
             'include-all-networks': 'true',
             'include-local-networks': 'false',

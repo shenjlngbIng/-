@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import sys
 import tempfile
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -25,6 +26,26 @@ def run(text: str) -> subprocess.CompletedProcess[str]:
 
 
 assert run(BASE).returncode == 0, "baseline"
+
+
+def group_line(name: str) -> str:
+    for line in BASE.splitlines():
+        if line.startswith(f"{name} = "):
+            return line
+    raise AssertionError(f"missing group: {name}")
+
+
+regional_samples = {
+    "HongKong": "🇭🇰香港-Gemini-IEPL",
+    "TaiWan": "🇹🇼台湾-IEPL",
+    "Japan": "🇯🇵日本-IEPL",
+    "Singapore": "🇸🇬新加坡-Gemini-IEPL",
+    "America": "🇺🇸美国-IEPL",
+}
+for group, sample in regional_samples.items():
+    line = group_line(group)
+    pattern = line.split("policy-regex-filter=", 1)[1].split(", tolerance=", 1)[0]
+    assert re.search(pattern, sample), f"regional filter does not match sample: {group}"
 
 mutations = {
     "final_open": ("\nFINAL,Final,dns-failed\n", "\nFINAL,DIRECT\n"),
@@ -54,9 +75,13 @@ mutations = {
         "\nDOMAIN-KEYWORD,-ad.a.yximgs.com,AdBlock\n",
         "\nDOMAIN,acg.tv,Domestic,extended-matching\nDOMAIN-KEYWORD,-ad.a.yximgs.com,AdBlock\n",
     ),
-    "allserver_filter": (
-        "|测速|官方|speed|USED|",
-        "|USED|",
+    "allserver_import": (
+        "include-all-proxies=true",
+        "include-all-proxies=false",
+    ),
+    "allserver_remote_path": (
+        "AllServer = fallback, Fail-Closed, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true",
+        "AllServer = fallback, Fail-Closed, policy-path=https://example.invalid/sub, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true",
     ),
     "runtime_ruleset": (
         "\nFINAL,Final,dns-failed\n",

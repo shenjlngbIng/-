@@ -48,9 +48,16 @@ geoip_anchor='GEOIP,CN,Domestic'
 if rules.index(ad_anchor) > rules.index(china_anchor): fail('AdBlock must precede ChinaDomain')
 if rules.index(china_anchor) > rules.index(geoip_anchor): fail('ChinaDomain must precede GEOIP,CN')
 if 'DOMAIN-SUFFIX,cn,DIRECT,no-resolve' in rules: fail('broad .cn DIRECT rule is forbidden')
-all_server=groups.get('AllServer','').lower()
-for marker in ('测速','官方','speed'):
-    if marker not in all_server: fail(f'AllServer filter missing: {marker}')
+all_server=groups.get('AllServer','')
+all_server_parts=[part.strip().lower() for part in all_server.split(',')]
+if all_server_parts[:2] != ['fallback', 'fail-closed']:
+    fail('AllServer must start with fallback, Fail-Closed')
+if 'include-all-proxies=true' not in all_server_parts:
+    fail('AllServer must collect proxies imported into [Proxy]')
+if any(part.startswith('policy-path=') for part in all_server_parts):
+    fail('AllServer must not depend on a remote policy-path')
+if 'sub.store' in all_server.lower() or 'example.invalid' in all_server.lower():
+    fail('AllServer contains an unsafe or placeholder subscription URL')
 required_rules = [
     'DOMAIN-SUFFIX,t.me,Telegram',
     'DOMAIN-SUFFIX,push.apple.com,ApplePush',
