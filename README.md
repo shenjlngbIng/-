@@ -12,6 +12,7 @@
 - 阻断未经允许的明文 DNS、DoT 和常见 DNS 绕过路径。
 - 运行时不使用远程 `RULE-SET`，降低上游临时变化对设备行为的影响；APNs 快照保存在 `Rules/APNs.list`。
 - 公开仓库不保存真实订阅、代理节点、Token、密码或证书。
+- 订阅通过 Surge 当前配置的 `[Proxy]` 节点导入，主配置不直接请求 `sub.store` 短链。
 - 配置、规则源、脚本、工作流和发布文件均可通过 SHA-256 校验。
 
 ## 适用环境
@@ -37,13 +38,19 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 
 ### 配置订阅
 
-公开配置中的 `AllServer` 使用不可路由的占位地址：
+本版本不在 `AllServer` 中写入远程 `policy-path`。请在 Surge 中将订阅导入当前配置的 `[Proxy]` 区域：
 
 ```ini
-policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL
+AllServer = fallback, Fail-Closed, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true
 ```
 
-请仅在自己的私有副本中替换为有效订阅地址。不要把真实订阅地址提交到公开仓库。
+完成导入后，`AllServer` 会自动收集 `[Proxy]` 中的全部节点，地区组再按名称筛选。不要把 `https://sub.store/download/...` 直接填入 `policy-path`；该地址依赖重写模块，且不属于普通公共订阅接口。
+
+如果 Surge 将订阅保留为独立策略组，请让 `AllServer` 引用该组，而不是再次填远程地址：
+
+```ini
+AllServer = fallback, Fail-Closed, include-other-group="你的订阅组名称", interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0
+```
 
 ### 检查策略组
 
@@ -74,7 +81,7 @@ FINAL,Final,dns-failed
 
 规则按从上到下匹配。广告规则位于 `ChinaDomain` 前面，避免国内域名先走 `Domestic` 而绕过广告拦截；`ChinaDomain` 位于 `GEOIP,CN,Domestic` 前面，作为国内精选规则，最后再由 GeoIP 兜底。
 
-`AllServer` 会过滤 `测速`、`官方`、`speed` 等非节点条目，不改变实际流量分流。
+地区组只按香港、台湾、日本、新加坡和美国等地区名称筛选；`AllServer` 不再用宽泛关键词过滤订阅节点，避免合法节点被误删。
 
 ### Telegram
 
@@ -229,7 +236,9 @@ python3 tools/generate_checksums.py
 
 ### 导入后没有节点
 
-公开配置只包含 `Fail-Closed` 哨兵节点。必须把 `AllServer` 的占位订阅地址替换为自己的有效地址。
+请确认订阅是“导入到当前配置/[Proxy]”，而不是只添加到独立订阅管理列表。然后重新载入配置，打开 `AllServer` 检查节点。
+
+如果 `AllServer` 只有 `Fail-Closed`，说明节点还没有进入当前配置的 `[Proxy]` 区域；如果 `AllServer` 有节点但地区组为红色，再检查节点名称和测速结果。
 
 ### GitHub Actions 报锁文件哈希过期
 
@@ -261,7 +270,7 @@ python3 tools/generate_checksums.py
 | Surge 导入报语法错误 | 文件是否完整、UTF-8、LF 换行，最终规则是否存在 |
 | Telegram 无法连接 | `Telegram` 策略是否选中有效节点，核心网段是否命中 |
 | Telegram 无后台推送 | `include-all-networks` 与 `include-apns` 是否为 `true`，`ApplePush` 是否有可用代理 |
-| 所有代理服务不可用 | `AllServer` 是否仍为占位地址，订阅是否有效 |
+| 所有代理服务不可用 | 订阅是否已导入当前配置的 `[Proxy]`，`AllServer` 是否能看到节点 |
 | CI 报重复规则 | 检查 `Surge.conf` 中是否重复嵌入规则 |
 | CI 报规则数量不一致 | 检查 `Rules/*.list` 与 `Rules/r10.lock.json` |
 | CI 报校验和失败 | 重新生成并审查 `SHA256SUMS.txt` |
@@ -270,7 +279,7 @@ python3 tools/generate_checksums.py
 
 不要向公开仓库提交：
 
-- 真实订阅 URL 或 Sub-Store 私有接口
+- 真实订阅 URL 或 Sub-Store 私有接口；不要把 `sub.store` 短链写入公开配置
 - 代理节点地址、端口和凭据
 - API Token、Bot Token、密码或 Cookie
 - 私钥、CA、客户端证书或设备标识

@@ -8,7 +8,8 @@
 - 不把全部 Apple 流量改为代理；APNs 只进入 `ApplePush` Fallback。
 - DNS 主解析必须保持加密；允许使用指定国内 DNS 作为引导，不使用 `system` 上游。
 - 保持 AdBlock 位于 `ChinaDomain` 前，禁止加入全量 `.cn` 直连规则。
-- `AllServer` 过滤词变更必须说明原因，避免误删可用节点。
+- `AllServer` 必须从当前配置 `[Proxy]` 区域收集节点，不得引入真实远程 `policy-path`。
+- 地区正则变更必须说明原因，避免误删可用节点。
 - 不把 `Final` 改为默认直连。
 - 不删除规则快照、许可证或审计工具。
 
