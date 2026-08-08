@@ -25,7 +25,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 | 维护环境 | Python 3.10 或更高版本，建议 3.12 或 3.13 |
 | 订阅格式 | Surge 节点格式，来源可以是 Sub-Store 或其他转换工具 |
 
-当前模板只把订阅入口集中到 AllServer 的一行。除订阅来源外，分流规则、策略组、DNS、Telegram、APNs 和 5551 条嵌入规则保持不变。
+当前模板只把订阅入口集中到 AllServer 的一行，并内置 Sub-Store `sub.store` 链接所需的最小请求重写。除订阅来源外，分流规则、策略组、DNS、Telegram、APNs 和 5551 条嵌入规则保持不变。
 
 占位符未替换前没有可用节点，这是模板的预期状态。替换成真实的 Surge 输出链接并重新载入后，AllServer 会自动拉取节点，地区组和服务组会继续沿用现有规则。
 
@@ -35,9 +35,9 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 |---|---|---|
 | 订阅 URL | [Proxy Group] 的 AllServer 行 | 只替换 YOUR_SUBSTORE_SURGE_URL |
 | 节点、地区组、服务组 | Surge.conf 现有代码 | 不修改 |
-| 模块 | Surge 的模块管理页 | 不需要安装才能拉取订阅 |
+| 模块 | 主配置的 `[MITM]` 与 `[Script]` | 已内置，不需要另建策略组或重复安装 |
 
-公开文件只保留 YOUR_SUBSTORE_SURGE_URL 占位符，不保存真实订阅。Surge 的 policy-path 支持读取策略列表或完整 Surge 配置；AllServer 同时保留 include-all-proxies=true，方便你以后手动导入节点时继续兼容。
+公开文件只保留 YOUR_SUBSTORE_SURGE_URL 占位符，不保存真实订阅。Surge 的 policy-path 支持读取策略列表或完整 Surge 配置；AllServer 同时保留 include-all-proxies=true，方便你以后手动导入节点时继续兼容。`sub.store/download/...` 这类 Sub-Store 链接由主配置内置的重写脚本处理。
 
 ## 快速开始
 
@@ -64,13 +64,13 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 
 | 内容 | 作用 | 能否当作节点订阅填入 |
 |---|---|---|
-| Sub-Store 的 Surge 输出链接 | 让 Surge 或其他工具获取 Surge 格式节点 | 可以，前提是返回的确实是 Surge 文本 |
-| Sub-Store 模块 URL | 安装或更新 Surge 模块 | 不可以，它不是节点列表 |
+| Sub-Store 的 Surge 输出链接 | 让 Surge 获取 Surge 格式节点 | 可以；`sub.store/download/...` 由主配置内置重写处理 |
+| Sub-Store 模块 URL | 单独安装或更新模块 | 不要填入 AllServer；本配置已内置最小重写 |
 | Sub-Store 网页预览地址 | 在浏览器查看文本或网页 | 不建议，预览内容不一定是可解析的订阅 |
 
 ### 第三步，只修改一处订阅 URL
 
-在 Surge 的配置编辑器中搜索 YOUR_SUBSTORE_SURGE_URL。只修改生效的 AllServer 行，把占位符替换为 Sub-Store 生成的 Surge 输出链接。不要修改注释里的说明，也不要把 URL 粘贴到 [Proxy]、[Rule]、[General] 或模块列表。
+在 Surge 的配置编辑器中搜索 YOUR_SUBSTORE_SURGE_URL。只修改生效的 AllServer 行，把占位符替换为 Sub-Store 生成的 Surge 输出链接。你当前使用的 `sub.store/download/...?...target=Surge` 属于输出链接，可以填在这里；不要把官方 `Surge.sgmodule` 模块地址填入 AllServer，也不要把 URL 粘贴到 [Proxy]、[Rule]、[General] 或模块列表。
 
 导入前，代码应当保留下面这一行结构。
 
@@ -101,9 +101,16 @@ AllServer = fallback, Fail-Closed, policy-path=https://example.invalid/surge-out
 ```ini
 [Proxy Group]
 AllServer = fallback, Fail-Closed, policy-path=YOUR_SUBSTORE_SURGE_URL, update-interval=3600, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true
+
+[MITM]
+hostname = %APPEND% sub.store
+
+[Script]
+Sub-Store Core=type=http-request,pattern=^https?:\/\/sub\.store\/((download)|api\/(preview|sync|(utils\/node-info))),script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-1.min.js,requires-body=true,timeout=900
+Sub-Store Simple=type=http-request,pattern=^https?:\/\/sub\.store,script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-0.min.js,requires-body=true,timeout=900
 ```
 
-不要修改 AllServer 以外的代码，也不要把订阅链接粘贴进 [Proxy]、[Rule]、[General]、策略组选择项或模块列表。请按以下规则填写。
+不要修改 AllServer 以外的代码，也不要删除上面的 `[MITM]`、`[Script]` 段。不要把订阅链接粘贴进 [Proxy]、[Rule]、[General]、策略组选择项或模块列表。请按以下规则填写。
 
 1. 只替换 YOUR_SUBSTORE_SURGE_URL，不要保留这个占位符。
 2. 使用 Sub-Store 生成的 Surge 输出链接，不要使用模块 URL 或网页预览 URL。
@@ -113,13 +120,11 @@ AllServer = fallback, Fail-Closed, policy-path=YOUR_SUBSTORE_SURGE_URL, update-i
 
 占位符是唯一需要填写的地方。原样保留占位符时不会拉取到节点，这是为了避免公开配置泄露订阅，不会影响其他规则代码。
 
-### 为什么看到了 Sub-Store 模块
+### Sub-Store 模块与主配置的关系
 
-模块和订阅是两条不同的链路。模块通常用于重写、转换、定时任务或将某个订阅输出成 Surge 可以读取的格式；订阅链接本身用于提供节点内容。
+模块和订阅是两条不同的链路。当前 R12.4 已把 Sub-Store 的最小重写逻辑直接写入主配置的 `[MITM]` 与 `[Script]`，因此你只需填写 AllServer 的唯一占位符，不需要单独安装 Sub-Store 模块，也不需要为它新建策略组。
 
-如果 Sub-Store 已经直接生成了 Surge 格式输出，单纯使用本模板不需要安装模块。安装模块也不会自动创建一个新的代理策略组，节点会由 AllServer 的 policy-path 直接拉取。
-
-只有在需要在 Surge 内自动转换或重写订阅时，才安装可信来源的模块。模块安装后先检查它修改了哪些 [Script]、[MITM]、[Rule] 或任务设置，出现节点变红、DNS 循环或重复请求时应先停用模块再排查。
+如果 Surge 中已经手动安装过官方 Sub-Store 模块，请停用其中一个，避免同一请求被重复重写。保留主配置内置版本即可。主配置只内置下载、预览和同步接口所需的重写，不包含定时同步任务。
 
 官方 Sub-Store 说明和模块入口如下。
 
@@ -178,7 +183,7 @@ HongKong、TaiWan、Japan、Singapore、America 都是 url-test 组。它们从 
 
 | 内容 | 是否需要单独策略组 | 正确处理 |
 |---|---|---|
-| Sub-Store 模块 | 不需要 | 只负责转换、重写或任务，节点由 AllServer 的 policy-path 拉取 |
+| Sub-Store 重写 | 不需要单独策略组 | 已内置在主配置 `[MITM]` 与 `[Script]`，节点仍由 AllServer 的 policy-path 拉取 |
 | Telegram 模块或脚本 | 通常不需要 | Telegram 流量使用现有 Telegram 组 |
 | APNs 相关设置 | 不需要新增模块 | 使用现有 ApplePush 组和 include-apns=true |
 | DNS 防绕过规则 | 不需要新增模块 | 使用现有 EncryptedDNS 组和规则顺序 |
@@ -191,7 +196,7 @@ HongKong、TaiWan、Japan、Singapore、America 都是 url-test 组。它们从 
 规则从上到下匹配，顺序不可随意调整。当前顺序的设计重点如下。
 
 1. 局域网发现、多播和本机地址先处理，避免局域网服务被代理。
-2. sub.store 直连，避免订阅服务被错误送入代理链路。
+2. sub.store 直连，避免订阅服务被错误送入代理链路；请求重写在主配置的 `[Script]` 中完成。
 3. APNs 域名与网段进入 ApplePush。
 4. DoH、DoH3、DoQ、DoT 和 DNS 协议进入 EncryptedDNS；常见明文 DNS 端口被拒绝。
 5. Apple、国内服务、国际服务、Telegram、流媒体和游戏按具体规则处理。
@@ -269,19 +274,21 @@ dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server �
 1. 先搜索 YOUR_SUBSTORE_SURGE_URL。如果还存在，说明你还没有填写唯一订阅位置，出现无节点或红色属于预期状态。
 2. 确认生效的 AllServer 行中已经替换成真实 Surge 输出 URL，并且保留 policy-path=、update-interval=3600 和 include-all-proxies=true。
 3. 确认 URL 返回的是 Surge 节点文本，不是 HTML、登录页、JSON 错误信息或网页预览。
-4. 暂时停用第三方模块，重新载入配置，排除模块改写 DNS、Host 或规则的影响。
-5. 先在 AllServer 中测试一个具体节点，再看地区组测速结果。
+4. 如果 AllServer 报 404，确认 `[MITM]` 中有 `hostname = %APPEND% sub.store`，且 `[Script]` 中同时有 `Sub-Store Core` 和 `Sub-Store Simple`；不要把模块 URL 填进 AllServer。
+5. 暂时停用其他第三方模块和外部资源，重新载入配置，排除它们的 `NSURLErrorDomain:-1005` 连接中断影响。
+6. 先在 AllServer 中测试一个具体节点，再看地区组测速结果。
 
 测速不是订阅转换器。测速只会标记节点可用性，不能修复错误的订阅格式、失效密码或不可达的节点主机。
 
 ### Sub-Store 链接打开正常，但 Surge 读取失败
 
-浏览器能打开链接不代表 Surge 收到的是正确订阅。请检查返回内容是否为 Surge 节点文本。
+浏览器能打开链接不代表 Surge 收到的是正确订阅。`sub.store` 是 Sub-Store 模块重写使用的域名，不是普通公共下载站；主配置必须保留内置重写段。官方项目也明确说明，未经过模块重写时直接访问 `sub.store` 可能返回错误或产生数据泄露风险。
 
 - 不能是 HTML 网页、登录页、JSON 错误信息或验证码页面。
 - 输出格式必须选择 Surge。
 - 链接不能被 URL 编码截断，也不能漏掉必要的查询参数。
-- 如果走模块转换，先确认模块执行成功，再复制最终 Surge 输出链接。
+- 如果 AllServer 显示 404，先确认主配置已经载入 `[MITM]` 和 `[Script]`，再只更新 AllServer。不要反复改测速参数，测速发生在订阅成功进入策略组之后。
+- 如果其他 GitHub/Gist 资源显示 `NSURLErrorDomain:-1005`，先停用这些不属于本仓库主配置的第三方资源；它们是网络连接中断，不会把 404 修好。
 
 对于公共仓库，不要把真实链接写入 Surge.conf、README、Issue、日志、截图或 ZIP。需要自动拉取时使用个人本地副本。
 
@@ -302,7 +309,7 @@ dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server �
 
 ### 配置提示占位符或 policy-path 错误
 
-YOUR_SUBSTORE_SURGE_URL 是模板唯一的填写位置。未替换时不要期待出现节点；使用时将它替换为真实的 Surge 输出链接，再保存并重新载入。若已经替换仍报错，检查 URL 返回格式、访问权限和节点参数，不要删除 policy-path。
+YOUR_SUBSTORE_SURGE_URL 是模板唯一的填写位置。未替换时不要期待出现节点；使用时将它替换为真实的 Surge 输出链接，再保存并重新载入。若已经替换仍报错，先检查 `[MITM]` 与 `[Script]` 的内置重写是否完整，再检查 URL 返回格式、访问权限和节点参数，不要删除 policy-path。
 
 ### 修改后节点数量或规则数量对不上
 
