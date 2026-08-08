@@ -3,7 +3,7 @@
   "profile": "Surge iOS Privacy + Push R12",
   "generated": "2026-08-08",
   "source_repository": "shenjlngbIng/-",
-  "profile_sha256": "02199984b974c96eac7a1a38e1d00efe55468bd79d86fb87804d17224c2b2a20",
+  "profile_sha256": "c0bb62f847bc5bbbbfa3efab2703069812ee7c224aef805edb7de700b469c863",
   "profile_lines": 5726,
   "active_rules": 5551,
   "required_invariants": {
@@ -11,7 +11,7 @@
     "telegram": "forced-proxy",
     "apns_capture": "enabled",
     "apns_fallback": "ApplePush_then_DIRECT",
-    "encrypted_dns": "EncryptedDNS_then_encrypted_DIRECT",
+    "encrypted_dns": "EncryptedDNS_direct_no_proxy_hostname_loop",
     "rule_order": "AdBlock_then_service_then_ChinaDomain_then_GEOIP_CN",
     "subscription_filter": "测速|官方|speed",
     "capture": {
