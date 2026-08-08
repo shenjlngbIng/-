@@ -95,6 +95,14 @@ mutations = {
         "[Host]\n",
         "[Host]\nsub.store = 127.0.0.1\n",
     ),
+    "substore_mitm_missing": (
+        "hostname = %APPEND% sub.store",
+        "hostname = %APPEND%",
+    ),
+    "substore_core_missing": (
+        "Sub-Store Core=type=http-request",
+        "Sub-Store Core=type=disabled",
+    ),
     "runtime_ruleset": (
         "\nFINAL,Final,dns-failed\n",
         "\nRULE-SET,https://example.invalid/a.list,Proxy\nFINAL,Final,dns-failed\n",

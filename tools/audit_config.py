@@ -32,13 +32,27 @@ def target(rule):
 text=PROFILE.read_text(encoding='utf-8')
 if not text.endswith('\n') or '\r' in text or '\ufeff' in text: fail('profile must be UTF-8 LF and end with newline')
 sec=parse(text)
-if list(sec)!=['General','Host','Proxy','Proxy Group','Rule']: fail(f'section order mismatch: {list(sec)}')
+if list(sec)!=['General','Host','Proxy','Proxy Group','MITM','Script','Rule']: fail(f'section order mismatch: {list(sec)}')
 g=kv(sec['General'],'General')
 required={'include-all-networks':'true','include-local-networks':'false','include-apns':'true','include-cellular-services':'false','ipv6':'true','compatibility-mode':'3','hijack-dns':'*:53','allow-dns-svcb':'false','use-local-host-item-for-proxy':'false','encrypted-dns-follow-outbound-mode':'false','udp-policy-not-supported-behaviour':'REJECT','block-quic':'all-proxy'}
 for k,v in required.items():
     if g.get(k)!=v: fail(f'[General] {k}: expected {v!r}, got {g.get(k)!r}')
 if any(line.lower().replace(' ','').startswith('sub.store=') for line in active(sec['Host'])):
     fail('sub.store must not be mapped to a local IP when policy-path uses sub.store')
+mitm=kv(sec['MITM'],'MITM')
+if mitm.get('hostname')!='%APPEND% sub.store':
+    fail('[MITM] must append sub.store for the embedded Sub-Store rewrite')
+scripts=kv(sec['Script'],'Script')
+core=scripts.get('Sub-Store Core','')
+simple=scripts.get('Sub-Store Simple','')
+core_pattern=r'pattern=^https?:\/\/sub\.store\/((download)|api\/(preview|sync|(utils\/node-info)))'
+if 'Sub-Store Core' not in scripts or 'type=http-request' not in core or core_pattern not in core:
+    fail('embedded Sub-Store Core rewrite is missing or changed')
+if 'Sub-Store Simple' not in scripts or 'type=http-request' not in simple or 'pattern=^https?:\\/\\/sub\\.store' not in simple:
+    fail('embedded Sub-Store Simple rewrite is missing or changed')
+for name,value in (('Sub-Store Core',core),('Sub-Store Simple',simple)):
+    if 'script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/' not in value:
+        fail(f'{name} must use the official Sub-Store release script')
 groups=kv(sec['Proxy Group'],'Proxy Group')
 if len(groups)!=32: fail(f'expected 32 groups, got {len(groups)}')
 rules=active(sec['Rule'])
