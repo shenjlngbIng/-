@@ -1,145 +1,137 @@
 # Surge iOS Privacy + Push R12
 
-这是面向 Surge iOS 的公开、可审计、失败关闭型配置。当前版本只修复无效规则和 ChinaDomain 顺序，设备实际运行规则固化在 `Surge.conf` 中，并通过规则快照、锁文件、回归测试、校验和与 GitHub Actions 保持行为可验证。
+这是面向 Surge iOS 的公开、可审计、失败关闭型配置。当前包以 `ChinaDomain 顺序修正版` 为底稿，只恢复旧版已经验证过的代理测速与失败回落方式，同时保留现有规则快照、APNs、加密 DNS、广告拦截和国内外分流。
 
-## 核心特性
+## 先看结论
 
-- 未匹配流量统一进入 `FINAL,Final,dns-failed`，不默认回落到直连。
-- Telegram 域名、ASN、IPv4 与 IPv6 网段强制进入 `Telegram` 代理策略。
-- APNs 使用独立 `ApplePush` Fallback，代理可用时走代理，故障时回落直连。
-- `include-all-networks = true` 与 `include-apns = true`，覆盖 Wi-Fi 和移动数据下的系统推送。
-- 使用 Cloudflare 与 Quad9 IP 端点 DoH；正常情况下加密 DNS 走 `EncryptedDNS`，故障时仅回落到加密 DoH 直连。
-- 阻断未经允许的明文 DNS、DoT 和常见 DNS 绕过路径。
-- 运行时不使用远程 `RULE-SET`，降低上游临时变化对设备行为的影响；APNs 快照保存在 `Rules/APNs.list`。
-- 公开仓库不保存真实订阅、代理节点、Token、密码或证书。
-- 配置、规则源、脚本、工作流和发布文件均可通过 SHA-256 校验。
-- 本版不包含 `Vendor/Sub-Store`，手机端订阅转换由单独安装的 Sub-Store 模块完成。
-- 公开仓库只保留占位符，不保存真实订阅地址。
+- 主配置文件是根目录的 `Surge.conf`。
+- 订阅转换由手机中单独安装的官方 Sub-Store 模块完成。
+- 主配置不包含 `Sub-Store Core`、`Sub-Store Simple` 或 Vendor/Sub-Store 文件。
+- `AllServer` 使用 `fallback`，每 60 秒检查节点，单个节点超时 300 秒，启动前先评估可用性。
+- `Proxy` 默认优先使用 `AllServer`，然后才是地区组。
+- 真实订阅链接、节点、密码、Token、MITM 私钥和证书不进入公开仓库。
+- `Fail-Closed` 显示红色是预期行为，它是故障关闭哨兵，不是真实代理节点。
 
 ## 适用环境
 
 | 项目 | 要求 |
 |---|---|
-| Surge | iOS 5.14.6 或更高版本 |
-| 运行模式 | 规则模式 |
-| Python | 3.10 或更高版本，建议 3.12/3.13 |
-| 订阅转换 | Surge 中单独安装 Sub-Store 模块，或使用其他 Surge 输出工具 |
+| 客户端 | Surge iOS 5.14.6 或更高版本 |
+| 模式 | 规则模式 |
+| 推送 | `include-all-networks = true`、`include-apns = true` |
+| 订阅转换 | Surge 中单独启用官方 Sub-Store 模块 |
+| 仓库维护 | Python 3.10 或更高版本，仅用于审计和发布检查 |
 
-## 快速开始
+## 配置文件中的关键设置
 
-### 导入配置
+公开仓库只保留不可路由的占位符：
 
-在 Surge 中通过 Raw 地址下载：
+```ini
+[Proxy Group]
+Proxy = select, AllServer, HongKong, TaiWan, Japan, Singapore, America, no-alert=0, hidden=0, include-all-proxies=0
+AllServer = fallback, Fail-Closed, policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL, update-interval=3600, interval=60, timeout=300, evaluate-before-use=true, no-alert=0, hidden=0, include-all-proxies=true
+```
+
+这几个参数的作用如下：
+
+| 参数 | 作用 |
+|---|---|
+| `fallback` | 节点不可用时自动尝试后续节点 |
+| `Fail-Closed` | 没有可用节点时不允许静默直连 |
+| `update-interval=3600` | 每小时刷新一次订阅策略 |
+| `interval=60` | 每 60 秒重新检查回落节点 |
+| `timeout=300` | 单个节点的健康检测超时 |
+| `evaluate-before-use=true` | 使用前先评估节点状态 |
+| `include-all-proxies=true` | 接收订阅输出中的全部代理节点 |
+
+## 手机端首次配置
+
+### 1. 安装并启用官方模块
+
+在 Surge 中单独安装并启用官方 Sub-Store 模块：
+
+```text
+https://raw.githubusercontent.com/sub-store-org/Sub-Store/master/config/Surge.sgmodule
+```
+
+只保留一套订阅转换模块。不要再把 Core、Simple 脚本复制到主配置，也不要把 `Surge.sgmodule` 地址填入 `AllServer`。
+
+本包没有主配置内的 `[Script]` 段，主配置中的订阅地址只负责接收节点；模块负责把订阅转换为 Surge 格式。
+
+### 2. 导入主配置
+
+可以直接导入根目录的 `Surge.conf`，也可以使用仓库 Raw 地址：
 
 ```text
 https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 ```
 
-也可以下载仓库后直接导入根目录中的 `Surge.conf`。
+公开文件导入后，`AllServer` 暂时不会有真实节点，因为其中是占位地址。这是为了避免公开仓库泄露个人订阅。
 
-### 配置订阅
+### 3. 在私有副本中填写订阅
 
-公开配置中的 `AllServer` 使用不可路由的占位地址：
+只在自己的私有副本中修改 `Proxy Group` 下的 `AllServer`，只替换 `policy-path=` 后面的地址。地址必须是 Sub-Store 生成的完整 Surge 输出链接，并且通常包含 `target=Surge`。
 
-```ini
-policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL
+不要填写以下地址：
+
+| 地址 | 是否可填入 `policy-path` | 原因 |
+|---|---|---|
+| Sub-Store 生成的 Surge 输出链接 | 可以 | 返回 Surge 节点格式 |
+| Sub-Store 网页预览地址 | 不可以 | 只用于查看，不是策略输出 |
+| `Surge.sgmodule` 地址 | 不可以 | 这是模块地址 |
+| GitHub Raw 主配置地址 | 不可以 | 这是配置文件地址 |
+| 含 Token 的私有订阅地址 | 只能私下使用 | 不得提交公开仓库 |
+
+截图或界面中显示的 `-copy8759` 只是某条订阅的名称标识，不是固定后缀。不要手动添加或删除它，直接从 Sub-Store 复制这条订阅生成的完整 Surge 输出链接即可。
+
+### 4. 重新载入并更新
+
+保存私有配置后按以下顺序操作：
+
+1. 重新载入主配置。
+2. 打开 Surge 的“外部资源”。
+3. 只更新 `AllServer`。
+4. 等待策略组完成第一次节点评估。
+
+不要为了更新 `AllServer` 同时更新所有 GitHub、Gist 或其他第三方外部资源。那些资源超时不会决定代理节点是否可用。
+
+## 节点全红时怎么判断
+
+### 正常情况
+
+`Fail-Closed` 红色是正常的。它指向本地无效端口，只用于在没有可用节点时阻止流量泄漏。
+
+### 订阅已经成功
+
+如果 `AllServer` 中已经出现真实节点名称，说明 Sub-Store 输出和订阅导入已经成功。此时问题不在 ChinaDomain 规则，也不在订阅转换脚本。
+
+### 真实节点全部红色
+
+恢复旧版回落参数后，如果所有真实节点仍然红色，通常是以下原因之一：
+
+- 机场节点已过期、停机或达到流量限制。
+- 节点密码、端口或加密方式已经变化。
+- Shadowsocks 的混淆参数与服务端不匹配。
+- 当前网络无法连接节点服务器。
+- `proxy-test-url` 在当前网络下无法完成检测。
+
+配置只能改善检测和回落逻辑，不能修复服务商已经失效的节点。此时应点击一个真实节点查看具体错误，不要把完整订阅链接、节点密码或 MITM 证书发到公开位置。
+
+## 分流设计
+
+规则按照从上到下的第一条命中原则执行：
+
+```text
+局域网和组播
+→ APNs
+→ 加密 DNS 与 DNS 端口阻断
+→ Apple、广告和服务规则
+→ Telegram 与国际服务
+→ ChinaDomain
+→ GEOIP,CN
+→ STUN、QUIC、UDP
+→ FINAL
 ```
-
-请仅在自己的私有副本中替换为有效订阅地址。不要把真实订阅地址提交到公开仓库。
-
-### 检查策略组
-
-| 策略组 | 用途 | 建议 |
-|---|---|---|
-| `Proxy` | 默认代理出口 | 选择稳定地区组或具体节点 |
-| `Telegram` | Telegram 流量 | 保持代理，不要加入 `DIRECT` |
-| `ApplePush` | iOS APNs 推送 | `Proxy` 优先，`DIRECT` 故障回落 |
-| `EncryptedDNS` | Surge 加密 DNS | `Proxy` 优先，`DIRECT` 仅加密回落 |
-| `Apple` | Apple 常规服务 | 默认 `DIRECT`，按网络环境调整 |
-| `Domestic` | 国内流量 | 默认 `DIRECT` |
-| `Final` | 未匹配流量 | 保持仅指向 `Proxy` |
-| `AdBlock` | 广告规则 | 在 `REJECT` 与 `REJECT-DROP` 中选择 |
-
-## 本版边界及仓库上传
-
-本版只修复无效规则和 ChinaDomain 顺序，以下内容保持原样：
-
-- DNS 地址和加密 DNS 出站方式。
-- Telegram、APNs、服务组和地区组。
-- 本地规则快照及嵌入式规则。
-- 失败关闭和最终规则。
-- 订阅占位符和 AllServer 策略组。
-
-本版不使用运行时远程 RULE-SET，不增加 P2P 端口 DIRECT，不把全局 DNS 改成国内 DNS。不要从其他版本复制配置片段覆盖本版。
-
-如果要同步完整仓库，应上传本版压缩包内的全部文件并覆盖同名文件，不要把 ZIP 文件本身当作 Surge 配置上传。若仓库中存在以下本版不需要的内容，应删除：
-
-~~~
-Vendor/Sub-Store/
-THIRD_PARTY_LICENSES/Sub-Store-AGPL-3.0.txt
-~~~
-
-配置 Raw 地址只指向仓库根目录的 Surge.conf：
-
-~~~
-https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
-~~~
-
-## Sub-Store 模块与订阅导入
-
-本版的订阅转换依赖 Surge 中单独安装的 Sub-Store 模块。模块地址如下：
-
-~~~
-https://raw.githubusercontent.com/sub-store-org/Sub-Store/master/config/Surge.sgmodule
-~~~
-
-模块和主配置的职责不同：
-
-- Sub-Store 模块负责处理 sub.store 请求并输出 Surge 节点格式。
-- 主配置的 AllServer 负责接收节点并汇总到策略组。
-- 地区组负责按节点名称筛选并测速。
-- 服务组负责选择最终出口。
-
-不需要为 Sub-Store 新建策略组，也不要把 Surge.sgmodule 地址填入 AllServer。本版仓库不包含 Vendor/Sub-Store 目录，手机端模块和仓库文件是两回事。
-
-唯一订阅填写位置是 Proxy Group 中的 AllServer 生效行。只替换 policy-path= 后面的占位地址，保留 Fail-Closed、update-interval 和 include-all-proxies 参数。
-
-推荐使用 Sub-Store 生成的 Surge 输出地址，通常包含 target=Surge。网页预览地址、模块地址和 GitHub 配置地址都不能填入 AllServer。
-
-填写完成后保存、重新载入主配置，再到外部资源中单独更新 AllServer。AllServer 没有节点时，不要先改测速参数；先检查模块、输出格式和订阅地址。
-
-### 地址填写对照
-
-| 地址类型 | 用途 | 是否填入 AllServer |
-|---|---|---|
-| Sub-Store Surge 输出链接 | 返回 Surge 节点格式 | 可以 |
-| Surge.sgmodule 地址 | 安装模块 | 不可以 |
-| Sub-Store 网页预览地址 | 浏览器查看内容 | 不可以 |
-| GitHub Raw 配置地址 | 导入主配置 | 不可以 |
-| 含真实 Token 的私有链接 | 私人订阅 | 不得公开 |
-
-## 分流顺序简表
-
-主配置按从上到下的第一条命中原则执行：
-
-~~~
-局域网和多播 → APNs → 加密 DNS → DNS 端口阻断
-→ Apple、直连、广告和国际服务规则
-→ Telegram → 其他国际服务 → ChinaDomain
-→ GEOIP,CN → STUN/QUIC/UDP → FINAL
-~~~
-
-ChinaDomain 位于国际服务规则之后、GEOIP,CN 之前。不要增加宽泛的 DOMAIN-SUFFIX,cn,DIRECT，也不要把 ChinaDomain 移到国际服务规则之前。
-
-## 证书和 TLS 故障
-
-如果 Surge 报告 sub.store 证书无效，不要点击信任异常证书，也不要关闭安全校验。依次检查当前网络、Surge HTTPS 解密证书、Sub-Store 模块状态和是否重复启用了两套 Sub-Store 模块。
-
-TLS 错误不是 ChinaDomain 顺序问题，也不能通过增加测速策略或修改 DNS 规则伪造正常证书。
-
-## 网络设计
-
-### 失败关闭
 
 最终规则为：
 
@@ -147,47 +139,60 @@ TLS 错误不是 ChinaDomain 顺序问题，也不能通过增加测速策略或
 FINAL,Final,dns-failed
 ```
 
-`Final` 策略组只提供代理路径。新增服务未被规则覆盖时，会进入受控代理出口，而不是无条件直连。
+本版不使用运行时远程 `RULE-SET`，不增加 P2P 端口 `DIRECT`，不把所有 UDP 强制改为直连，也不使用宽泛的 `DOMAIN-SUFFIX,cn,DIRECT`。
 
-### Telegram
+### ChinaDomain 顺序
 
-Telegram 规则覆盖常见域名、ASN、IPv4 和 IPv6 网段。审计器会检查：
+`ChinaDomain` 放在国际服务规则之后、`GEOIP,CN` 之前。这样可以先命中 ChatGPT、YouTube、Netflix、Telegram、GitHub 等专用规则，再将未命中的国内域名交给 `Domestic`。
 
-- `t.me` 必须进入 `Telegram`。
-- 核心 Telegram IPv4 网段必须存在。
-- Telegram 相关规则不得指向 `DIRECT`。
-- `Telegram` 策略组不得包含直连路径。
-
-切换节点时，优先使用 TCP 长连接稳定、出口变化较少的节点。
+不要把 ChinaDomain 移到国际服务规则之前，也不要用一个宽泛的中国域名规则替换现有快照。
 
 ### APNs
 
-配置使用：
+APNs 使用独立 `ApplePush` Fallback：
 
 ```ini
-include-all-networks = true
-include-apns = true
+ApplePush = fallback, Proxy, DIRECT, interval=60, timeout=300, no-alert=0, hidden=0
 ```
 
-APNs 单独进入 `ApplePush` Fallback，优先使用 `Proxy`，代理不可用时回落 `DIRECT`，避免代理故障时整机收不到通知。APNs 规则快照位于 `Rules/APNs.list`，同时已嵌入 `Surge.conf`。
+代理可用时优先使用代理，代理失败时回落直连。APNs 规则快照保存在 `Rules/APNs.list`，并已嵌入主配置。移动数据推送依赖 `include-apns = true`。
 
-修改配置后重新载入 Surge；移动数据推送依赖 `include-apns = true`。若仍无通知，可开关一次飞行模式，让系统重建 APNs 长连接。
+### 加密 DNS
 
-APNs 链路本身不需要额外脚本或模块。Sub-Store 订阅模块是独立链路，按本 README 的订阅说明单独安装。未采用全量 Apple 代理、`akadns.net` 泛域名或 `apple.com.edgekey.net` 关键词，避免改变普通 Apple 及国内服务分流。
-`include-local-networks = false` 保持局域网不被接管；若使用 AirDrop 或 Xcode，需留意 `include-all-networks` 扩大接管范围的系统副作用。
+本版保留 Cloudflare 与 Quad9 的加密 DNS 配置，并将有效的 `DOH`、`DOH3`、`DOQ` 流量交给 `EncryptedDNS`。无效的 `PROTOCOL,DOT` 和 `PROTOCOL,DNS` 规则不再保留。明文 DNS、DoT 和常见 DNS 绕过端口继续阻断。
 
-### DNS
+## 仓库覆盖与删除清单
 
-默认加密 DNS：
+上传本包时，应将压缩包内的文件解压后覆盖仓库同名文件。不要把 ZIP 文件本身作为 Surge 配置上传。
+
+本包内没有以下内容。若旧仓库仍然存在，删除它们即可：
 
 ```text
-https://1.1.1.1/dns-query
-https://9.9.9.9/dns-query
+Vendor/Sub-Store/
+THIRD_PARTY_LICENSES/Sub-Store-AGPL-3.0.txt
 ```
 
-`encrypted-dns-follow-outbound-mode = true` 使加密 DNS 按 `EncryptedDNS` 组出站，代理优先、加密 DoH 直连回落。端口 53、853 和 8853 的非授权请求会被阻断，避免应用绕过配置中的解析路径。
+除上述遗留 Sub-Store Vendor 文件外，不需要为本版本额外删除正式文件。以下文件必须保留：
 
-## 仓库结构
+```text
+Surge.conf
+README.md
+Rules/
+tools/
+SHA256SUMS.txt
+SHA256SUMS_fixed.txt
+RELEASE_MANIFEST.txt
+.github/workflows/
+LICENSE
+NOTICE.md
+SECURITY.md
+CONTRIBUTING.md
+CHANGELOG.md
+```
+
+真实订阅配置、私有节点文件、MITM `ca-p12`、密码和本地缓存不应上传。`__pycache__` 和 `.pyc` 只是本地缓存，也不属于仓库发布内容。
+
+## 发布包目录
 
 ```text
 .
@@ -199,13 +204,12 @@ https://9.9.9.9/dns-query
 │   ├── APNs.list
 │   ├── r10.lock.json
 │   └── upstreams.lock.json
-├── THIRD_PARTY_LICENSES/
 ├── tools/
 │   ├── audit_config.py
 │   ├── audit_rules.py
 │   ├── embed_runtime_rules.py
-│   ├── generate_release_manifest.py
 │   ├── generate_checksums.py
+│   ├── generate_release_manifest.py
 │   ├── stage_surge_zip.py
 │   ├── test_audit_config.py
 │   ├── test_stage_surge_zip.py
@@ -213,32 +217,13 @@ https://9.9.9.9/dns-query
 ├── Surge.conf
 ├── README.md
 ├── CHANGELOG.md
-├── NOTICE.md
-├── SECURITY.md
-├── CONTRIBUTING.md
-├── LICENSE
 ├── RELEASE_MANIFEST.txt
 ├── SHA256SUMS.txt
-└── SHA256SUMS_fixed.txt
+├── SHA256SUMS_fixed.txt
+└── 许可证、通知与协作文件
 ```
 
-## 文件用途
-
-| 文件或目录 | 用途 |
-|---|---|
-| `Surge.conf` | Surge 最终导入和运行的主配置 |
-| `Rules/` | 本地规则快照、上游锁与配置锁 |
-| `tools/audit_config.py` | 检查配置结构、关键策略和安全不变量 |
-| `tools/audit_rules.py` | 检查规则快照、锁文件与规则数量 |
-| `tools/embed_runtime_rules.py` | 更新主配置对应的锁文件元数据 |
-| `tools/generate_release_manifest.py` | 生成发布文件清单与哈希 |
-| `tools/generate_checksums.py` | 重新生成 `SHA256SUMS.txt` 和 `SHA256SUMS_fixed.txt` |
-| `tools/stage_surge_zip.py` | 安全解包并限制候选 ZIP 可导入文件 |
-| `.github/workflows/audit.yml` | 推送和 PR 的自动审计 |
-| `.github/workflows/unpack.yml` | 手动验证候选 `Surge.zip` |
-| `SHA256SUMS_fixed.txt` | 与主校验文件进行一致性比对 |
-
-## 本地校验
+## 本地维护与验证
 
 在仓库根目录执行：
 
@@ -248,115 +233,21 @@ python3 tools/audit_rules.py
 python3 tools/test_audit_config.py
 python3 tools/test_stage_surge_zip.py
 python3 tools/generate_release_manifest.py
+python3 tools/generate_checksums.py
 sha256sum -c SHA256SUMS.txt
+cmp --silent SHA256SUMS.txt SHA256SUMS_fixed.txt
 ```
 
-需要更新发布清单和校验和时执行：
+修改 `Surge.conf` 后必须同步更新 `Rules/r10.lock.json`、`RELEASE_MANIFEST.txt`、`SHA256SUMS.txt` 和 `SHA256SUMS_fixed.txt`。不要手工改校验值，使用仓库中的脚本生成。
 
-```bash
-python3 tools/generate_release_manifest.py
-python3 tools/generate_checksums.py
-```
+## 安全提醒
 
-所有命令通过后再提交配置。
+- 真实订阅 URL 通常包含 Token，等同于账号凭据。
+- 节点密码、端口、服务器地址和客户端证书不要提交公开仓库。
+- `[MITM]` 中的 `ca-p12` 与 `ca-passphrase` 属于私钥材料，不要放入公开配置。
+- 如果私钥或订阅链接已经发送到聊天、Issue、日志或仓库，应立即更换订阅 Token，并重新生成 Surge MITM 证书。
+- 遇到 `sub.store` 证书无效时，不要信任异常证书，也不要关闭 TLS 安全校验。
 
-## 规则维护流程
+## 版本边界
 
-1. 修改 `Rules/*.list` 或 `Surge.conf`。
-2. 规则源发生变化时，运行对应更新或嵌入工具。
-3. 运行 `python3 tools/embed_runtime_rules.py` 更新锁文件元数据。
-4. 执行完整审计和回归测试。
-5. 运行 `python3 tools/generate_checksums.py`。
-6. 再次运行 `sha256sum -c SHA256SUMS.txt`。
-7. 检查差异，确认没有真实订阅、Token、密码、证书或私有节点。
-
-## GitHub Actions
-
-### Audit Surge R12
-
-在 `main` 分支推送、Pull Request 和手动触发时运行，使用 Python 3.12 与 3.13 检查：
-
-- Python 工具可编译性
-- Surge 配置不变量
-- 规则源和锁文件
-- 破坏性变更回归测试
-- ZIP 安全暂存逻辑
-- 全部 SHA-256 校验和
-
-### Validate Surge R12 ZIP
-
-手动触发前，将候选文件命名为 `Surge.zip` 放在仓库根目录。工作流只解包白名单文件，并对暂存配置和规则进行审计。`Surge.zip` 属于临时文件，不应长期提交。
-
-## 常见问题
-
-### Telegram 能联网但没有后台通知
-
-确认 `include-all-networks = true`、`include-apns = true`，并检查 `ApplePush` 是否有可用代理。重新载入配置并重启 Surge 与 Telegram；不要把 APNs 规则改成固定 `DIRECT`。
-
-### 导入后没有节点
-
-公开配置只包含 `Fail-Closed` 哨兵节点。必须把 `AllServer` 的占位订阅地址替换为自己的有效地址。
-
-### GitHub Actions 报锁文件哈希过期
-
-运行：
-
-```bash
-python3 tools/embed_runtime_rules.py
-python3 tools/generate_checksums.py
-```
-
-随后重新执行完整审计。
-
-### SHA256SUMS 校验失败
-
-说明被校验文件已发生变化。先确认变化是有意的，再运行 `python3 tools/generate_checksums.py`，不要手工修改单个哈希值来绕过检查。
-
-### 可以删除 Rules 目录吗
-
-不可以。设备运行时虽然不远程加载这些文件，但仓库审计、规则更新和重新嵌入依赖它们。
-
-### 可以上传 __pycache__ 或 pyc 文件吗
-
-不可以。这些是本地 Python 缓存，已由 `.gitignore` 排除。发现后应删除。
-
-## 故障排查
-
-| 现象 | 优先检查 |
-|---|---|
-| Surge 导入报语法错误 | 文件是否完整、UTF-8、LF 换行，最终规则是否存在 |
-| Telegram 无法连接 | `Telegram` 策略是否选中有效节点，核心网段是否命中 |
-| Telegram 无后台推送 | `include-all-networks` 与 `include-apns` 是否为 `true`，`ApplePush` 是否有可用代理 |
-| 所有代理服务不可用 | `AllServer` 是否仍为占位地址，订阅是否有效 |
-| CI 报重复规则 | 检查 `Surge.conf` 中是否重复嵌入规则 |
-| CI 报规则数量不一致 | 检查 `Rules/*.list` 与 `Rules/r10.lock.json` |
-| CI 报校验和失败 | 重新生成并审查 `SHA256SUMS.txt` |
-
-## 安全说明
-
-不要向公开仓库提交：
-
-- 真实订阅 URL 或 Sub-Store 私有接口
-- 代理节点地址、端口和凭据
-- API Token、Bot Token、密码或 Cookie
-- 私钥、CA、客户端证书或设备标识
-
-发现安全问题时，请按照 `SECURITY.md` 处理，不要在公开 Issue 中披露敏感信息。
-
-## 版本与提交
-
-建议使用语义清晰的提交信息：
-
-```text
-feat: add service routing
-fix: correct Telegram routing
-ci: improve audit workflow
-docs: update usage guide
-refactor: simplify profile comments
-```
-
-稳定版本建议创建 GitHub Release，并附上 `Surge.conf`、版本说明和 SHA-256。
-
-## 许可证与第三方来源
-
-本仓库原创脚本、配置结构和文档采用 `LICENSE` 中的 MIT License。第三方规则和材料仍遵循各自许可证，来源与许可证副本位于 `NOTICE.md` 和 `THIRD_PARTY_LICENSES/`。
+本版本解决的是配置结构、无效规则、ChinaDomain 顺序、节点测速和失败回落问题。它不会保证任何机场节点永久可用，也不会替换服务商提供的节点协议、密码或服务器。
