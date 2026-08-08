@@ -1,6 +1,6 @@
 # Surge iOS Privacy + Push R12
 
-一套面向 Surge iOS 的公开、可审计、失败关闭型配置。项目将设备实际运行规则固化在 `Surge.conf` 中，并通过本地规则快照、锁文件、回归测试、校验和与 GitHub Actions 保持配置行为可验证。
+这是面向 Surge iOS 的公开、可审计、失败关闭型配置。当前版本只修复无效规则和 ChinaDomain 顺序，设备实际运行规则固化在 `Surge.conf` 中，并通过规则快照、锁文件、回归测试、校验和与 GitHub Actions 保持行为可验证。
 
 ## 核心特性
 
@@ -13,6 +13,8 @@
 - 运行时不使用远程 `RULE-SET`，降低上游临时变化对设备行为的影响；APNs 快照保存在 `Rules/APNs.list`。
 - 公开仓库不保存真实订阅、代理节点、Token、密码或证书。
 - 配置、规则源、脚本、工作流和发布文件均可通过 SHA-256 校验。
+- 本版不包含 `Vendor/Sub-Store`，手机端订阅转换由单独安装的 Sub-Store 模块完成。
+- 公开仓库只保留占位符，不保存真实订阅地址。
 
 ## 适用环境
 
@@ -21,7 +23,7 @@
 | Surge | iOS 5.14.6 或更高版本 |
 | 运行模式 | 规则模式 |
 | Python | 3.10 或更高版本，建议 3.12/3.13 |
-| 订阅 | Sub-Store 或其他可输出 Surge 节点订阅的工具 |
+| 订阅转换 | Surge 中单独安装 Sub-Store 模块，或使用其他 Surge 输出工具 |
 
 ## 快速开始
 
@@ -57,6 +59,83 @@ policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL
 | `Domestic` | 国内流量 | 默认 `DIRECT` |
 | `Final` | 未匹配流量 | 保持仅指向 `Proxy` |
 | `AdBlock` | 广告规则 | 在 `REJECT` 与 `REJECT-DROP` 中选择 |
+
+## 本版边界及仓库上传
+
+本版只修复无效规则和 ChinaDomain 顺序，以下内容保持原样：
+
+- DNS 地址和加密 DNS 出站方式。
+- Telegram、APNs、服务组和地区组。
+- 本地规则快照及嵌入式规则。
+- 失败关闭和最终规则。
+- 订阅占位符和 AllServer 策略组。
+
+本版不使用运行时远程 RULE-SET，不增加 P2P 端口 DIRECT，不把全局 DNS 改成国内 DNS。不要从其他版本复制配置片段覆盖本版。
+
+如果要同步完整仓库，应上传本版压缩包内的全部文件并覆盖同名文件，不要把 ZIP 文件本身当作 Surge 配置上传。若仓库中存在以下本版不需要的内容，应删除：
+
+~~~
+Vendor/Sub-Store/
+THIRD_PARTY_LICENSES/Sub-Store-AGPL-3.0.txt
+~~~
+
+配置 Raw 地址只指向仓库根目录的 Surge.conf：
+
+~~~
+https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
+~~~
+
+## Sub-Store 模块与订阅导入
+
+本版的订阅转换依赖 Surge 中单独安装的 Sub-Store 模块。模块地址如下：
+
+~~~
+https://raw.githubusercontent.com/sub-store-org/Sub-Store/master/config/Surge.sgmodule
+~~~
+
+模块和主配置的职责不同：
+
+- Sub-Store 模块负责处理 sub.store 请求并输出 Surge 节点格式。
+- 主配置的 AllServer 负责接收节点并汇总到策略组。
+- 地区组负责按节点名称筛选并测速。
+- 服务组负责选择最终出口。
+
+不需要为 Sub-Store 新建策略组，也不要把 Surge.sgmodule 地址填入 AllServer。本版仓库不包含 Vendor/Sub-Store 目录，手机端模块和仓库文件是两回事。
+
+唯一订阅填写位置是 Proxy Group 中的 AllServer 生效行。只替换 policy-path= 后面的占位地址，保留 Fail-Closed、update-interval 和 include-all-proxies 参数。
+
+推荐使用 Sub-Store 生成的 Surge 输出地址，通常包含 target=Surge。网页预览地址、模块地址和 GitHub 配置地址都不能填入 AllServer。
+
+填写完成后保存、重新载入主配置，再到外部资源中单独更新 AllServer。AllServer 没有节点时，不要先改测速参数；先检查模块、输出格式和订阅地址。
+
+### 地址填写对照
+
+| 地址类型 | 用途 | 是否填入 AllServer |
+|---|---|---|
+| Sub-Store Surge 输出链接 | 返回 Surge 节点格式 | 可以 |
+| Surge.sgmodule 地址 | 安装模块 | 不可以 |
+| Sub-Store 网页预览地址 | 浏览器查看内容 | 不可以 |
+| GitHub Raw 配置地址 | 导入主配置 | 不可以 |
+| 含真实 Token 的私有链接 | 私人订阅 | 不得公开 |
+
+## 分流顺序简表
+
+主配置按从上到下的第一条命中原则执行：
+
+~~~
+局域网和多播 → APNs → 加密 DNS → DNS 端口阻断
+→ Apple、直连、广告和国际服务规则
+→ Telegram → 其他国际服务 → ChinaDomain
+→ GEOIP,CN → STUN/QUIC/UDP → FINAL
+~~~
+
+ChinaDomain 位于国际服务规则之后、GEOIP,CN 之前。不要增加宽泛的 DOMAIN-SUFFIX,cn,DIRECT，也不要把 ChinaDomain 移到国际服务规则之前。
+
+## 证书和 TLS 故障
+
+如果 Surge 报告 sub.store 证书无效，不要点击信任异常证书，也不要关闭安全校验。依次检查当前网络、Surge HTTPS 解密证书、Sub-Store 模块状态和是否重复启用了两套 Sub-Store 模块。
+
+TLS 错误不是 ChinaDomain 顺序问题，也不能通过增加测速策略或修改 DNS 规则伪造正常证书。
 
 ## 网络设计
 
@@ -94,7 +173,7 @@ APNs 单独进入 `ApplePush` Fallback，优先使用 `Proxy`，代理不可用�
 
 修改配置后重新载入 Surge；移动数据推送依赖 `include-apns = true`。若仍无通知，可开关一次飞行模式，让系统重建 APNs 长连接。
 
-不需要额外脚本或模块。未采用全量 Apple 代理、`akadns.net` 泛域名或 `apple.com.edgekey.net` 关键词，避免改变普通 Apple 及国内服务分流。
+APNs 链路本身不需要额外脚本或模块。Sub-Store 订阅模块是独立链路，按本 README 的订阅说明单独安装。未采用全量 Apple 代理、`akadns.net` 泛域名或 `apple.com.edgekey.net` 关键词，避免改变普通 Apple 及国内服务分流。
 `include-local-networks = false` 保持局域网不被接管；若使用 AirDrop 或 Xcode，需留意 `include-all-networks` 扩大接管范围的系统副作用。
 
 ### DNS
@@ -139,7 +218,8 @@ https://9.9.9.9/dns-query
 ├── CONTRIBUTING.md
 ├── LICENSE
 ├── RELEASE_MANIFEST.txt
-└── SHA256SUMS.txt
+├── SHA256SUMS.txt
+└── SHA256SUMS_fixed.txt
 ```
 
 ## 文件用途
@@ -152,10 +232,11 @@ https://9.9.9.9/dns-query
 | `tools/audit_rules.py` | 检查规则快照、锁文件与规则数量 |
 | `tools/embed_runtime_rules.py` | 更新主配置对应的锁文件元数据 |
 | `tools/generate_release_manifest.py` | 生成发布文件清单与哈希 |
-| `tools/generate_checksums.py` | 重新生成 `SHA256SUMS.txt` |
+| `tools/generate_checksums.py` | 重新生成 `SHA256SUMS.txt` 和 `SHA256SUMS_fixed.txt` |
 | `tools/stage_surge_zip.py` | 安全解包并限制候选 ZIP 可导入文件 |
 | `.github/workflows/audit.yml` | 推送和 PR 的自动审计 |
 | `.github/workflows/unpack.yml` | 手动验证候选 `Surge.zip` |
+| `SHA256SUMS_fixed.txt` | 与主校验文件进行一致性比对 |
 
 ## 本地校验
 
