@@ -101,7 +101,7 @@ if groups.get('EncryptedDNS','').split(',')[0].strip()!='fallback': fail('Encryp
 if groups.get('ApplePush','').split(',')[0].strip()!='fallback': fail('ApplePush must be fallback')
 if 'Proxy' not in groups.get('EncryptedDNS','') or 'DIRECT' not in groups.get('EncryptedDNS',''): fail('EncryptedDNS fallback members missing')
 if 'Proxy' not in groups.get('ApplePush','') or 'DIRECT' not in groups.get('ApplePush',''): fail('ApplePush fallback members missing')
-if not g.get('encrypted-dns-server','').startswith('https://1.1.1.1/dns-query'): fail('encrypted DNS endpoint invariant failed')
+if g.get('encrypted-dns-server') != 'https://dns.alidns.com/dns-query, https://doh.pub/dns-query': fail('domestic encrypted DNS endpoint invariant failed')
 if g.get('dns-server') != '223.5.5.5, 114.114.114.114': fail('domestic DNS bootstrap invariant failed')
 if 'system' in g.get('dns-server','').lower(): fail('system DNS cannot be an upstream')
 if len(rules)!=len(set(rules)): fail('duplicate active rules detected')

@@ -63,6 +63,10 @@ mutations = {
         "\nencrypted-dns-follow-outbound-mode = false\n",
         "\nencrypted-dns-follow-outbound-mode = true\n",
     ),
+    "overseas_encrypted_dns": (
+        "encrypted-dns-server = https://dns.alidns.com/dns-query, https://doh.pub/dns-query",
+        "encrypted-dns-server = https://1.1.1.1/dns-query, https://9.9.9.9/dns-query",
+    ),
     "domestic_dns_bootstrap": (
         "\ndns-server = 223.5.5.5, 114.114.114.114\n",
         "\ndns-server = 1.1.1.1, 9.9.9.9\n",

@@ -27,7 +27,7 @@ lock.update({
         'telegram': 'forced-proxy',
         'apns_capture': 'enabled',
         'apns_fallback': 'ApplePush_then_DIRECT',
-        'encrypted_dns': 'EncryptedDNS_direct_no_proxy_hostname_loop',
+        'encrypted_dns': 'EncryptedDNS_domestic_direct_no_proxy_hostname_loop',
         'rule_order': 'AdBlock_then_service_then_ChinaDomain_then_GEOIP_CN',
         'subscription_import': 'single_substore_policy_path_placeholder',
         'capture': {
