@@ -14,9 +14,6 @@
 - ZIP 安全暂存工具
 - GitHub Actions 工作流
 - 使用、安全和贡献文档
-- 订阅导入兼容和策略组接入说明
-
-主配置随仓库固定发布 Sub-Store `2.36.31` 的两份重写脚本，仅用于按官方接口处理 `sub.store` 请求；脚本版权和许可证归 Sub-Store 项目所有，来源、上游提交与许可证副本见 `Vendor/Sub-Store/README.md` 和 `THIRD_PARTY_LICENSES/Sub-Store-AGPL-3.0.txt`。主配置不再依赖 GitHub Release 的运行时跳转地址。
 
 原创脚本、配置结构与文档采用仓库根目录 `LICENSE` 中的 MIT License。第三方规则、数据和材料继续遵循各自许可证；MIT License 不替代或覆盖第三方许可证。
 
