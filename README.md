@@ -25,7 +25,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 | 维护环境 | Python 3.10 或更高版本，建议 3.12 或 3.13 |
 | 订阅格式 | Surge 节点格式，来源可以是 Sub-Store 或其他转换工具 |
 
-当前模板只把订阅入口集中到 AllServer 的一行，并内置 Sub-Store `sub.store` 链接所需的最小请求重写。除订阅来源外，分流规则、策略组、DNS、Telegram、APNs 和 5551 条嵌入规则保持不变。
+当前模板只把订阅入口集中到 AllServer 的一行，并内置 Sub-Store `sub.store` 链接所需的最小请求重写。重写脚本固定到官方提交并通过 jsDelivr 获取，避免运行时依赖 GitHub Release 跳转。除订阅来源外，分流规则、策略组、DNS、Telegram、APNs 和 5551 条嵌入规则保持不变。
 
 占位符未替换前没有可用节点，这是模板的预期状态。替换成真实的 Surge 输出链接并重新载入后，AllServer 会自动拉取节点，地区组和服务组会继续沿用现有规则。
 
@@ -37,7 +37,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 | 节点、地区组、服务组 | Surge.conf 现有代码 | 不修改 |
 | 模块 | 主配置的 `[MITM]` 与 `[Script]` | 已内置，不需要另建策略组或重复安装 |
 
-公开文件只保留 YOUR_SUBSTORE_SURGE_URL 占位符，不保存真实订阅。Surge 的 policy-path 支持读取策略列表或完整 Surge 配置；AllServer 同时保留 include-all-proxies=true，方便你以后手动导入节点时继续兼容。`sub.store/download/...` 这类 Sub-Store 链接由主配置内置的重写脚本处理。
+公开文件只保留 YOUR_SUBSTORE_SURGE_URL 占位符，不保存真实订阅。Surge 的 policy-path 支持读取策略列表或完整 Surge 配置；AllServer 同时保留 include-all-proxies=true，方便你以后手动导入节点时继续兼容。`sub.store/download/...` 这类 Sub-Store 链接由主配置内置、固定版本的重写脚本处理。
 
 ## 快速开始
 
@@ -106,8 +106,8 @@ AllServer = fallback, Fail-Closed, policy-path=YOUR_SUBSTORE_SURGE_URL, update-i
 hostname = %APPEND% sub.store
 
 [Script]
-Sub-Store Core=type=http-request,pattern=^https?:\/\/sub\.store\/((download)|api\/(preview|sync|(utils\/node-info))),script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-1.min.js,requires-body=true,timeout=900
-Sub-Store Simple=type=http-request,pattern=^https?:\/\/sub\.store,script-path=https://github.com/sub-store-org/Sub-Store/releases/latest/download/sub-store-0.min.js,requires-body=true,timeout=900
+Sub-Store Core=type=http-request,pattern=^https?:\/\/sub\.store\/((download)|api\/(preview|sync|(utils\/node-info))),script-path=https://cdn.jsdelivr.net/gh/sub-store-org/Sub-Store@b43580e93e3ca2171d62ab17d1806afdc5fadd01/sub-store-1.min.js,requires-body=true,timeout=900
+Sub-Store Simple=type=http-request,pattern=^https?:\/\/sub\.store,script-path=https://cdn.jsdelivr.net/gh/sub-store-org/Sub-Store@b43580e93e3ca2171d62ab17d1806afdc5fadd01/sub-store-0.min.js,requires-body=true,timeout=900
 ```
 
 不要修改 AllServer 以外的代码，也不要删除上面的 `[MITM]`、`[Script]` 段。不要把订阅链接粘贴进 [Proxy]、[Rule]、[General]、策略组选择项或模块列表。请按以下规则填写。
@@ -122,9 +122,11 @@ Sub-Store Simple=type=http-request,pattern=^https?:\/\/sub\.store,script-path=ht
 
 ### Sub-Store 模块与主配置的关系
 
-模块和订阅是两条不同的链路。当前 R12.4 已把 Sub-Store 的最小重写逻辑直接写入主配置的 `[MITM]` 与 `[Script]`，因此你只需填写 AllServer 的唯一占位符，不需要单独安装 Sub-Store 模块，也不需要为它新建策略组。
+模块和订阅是两条不同的链路。当前 R12.5 已把 Sub-Store 的最小重写逻辑直接写入主配置的 `[MITM]` 与 `[Script]`，并把脚本固定放在 `Vendor/Sub-Store/`。因此你只需填写 AllServer 的唯一占位符，不需要单独安装 Sub-Store 模块，也不需要为它新建策略组。
 
 如果 Surge 中已经手动安装过官方 Sub-Store 模块，请停用其中一个，避免同一请求被重复重写。保留主配置内置版本即可。主配置只内置下载、预览和同步接口所需的重写，不包含定时同步任务。
+
+仓库内脚本固定于 Sub-Store `2.36.31`，来源、上游提交和许可证见 [`Vendor/Sub-Store/README.md`](Vendor/Sub-Store/README.md)。运行时通过固定提交的 jsDelivr 地址获取，不再请求 `github.com/sub-store-org/Sub-Store/releases/latest/download/...` 或依赖本仓库 Raw 脚本。若 jsDelivr 本身也出现网络中断，那是当前网络无法取得远程脚本，不能靠测速或分流规则伪造脚本内容。
 
 官方 Sub-Store 说明和模块入口如下。
 
@@ -277,6 +279,7 @@ dns-server 是启动和引导阶段的普通 DNS 列表，encrypted-dns-server �
 4. 如果 AllServer 报 404，确认 `[MITM]` 中有 `hostname = %APPEND% sub.store`，且 `[Script]` 中同时有 `Sub-Store Core` 和 `Sub-Store Simple`；不要把模块 URL 填进 AllServer。
 5. 暂时停用其他第三方模块和外部资源，重新载入配置，排除它们的 `NSURLErrorDomain:-1005` 连接中断影响。
 6. 先在 AllServer 中测试一个具体节点，再看地区组测速结果。
+7. 如果 `Sub-Store Core` 或 `Sub-Store Simple` 报 TLS 错误，确认脚本地址是固定提交的 `cdn.jsdelivr.net/gh/sub-store-org/Sub-Store@...`，不是旧的 `github.com/.../releases/latest/download/...`；仍无法访问 jsDelivr 时，先恢复该域名的网络访问后再更新主配置。
 
 测速不是订阅转换器。测速只会标记节点可用性，不能修复错误的订阅格式、失效密码或不可达的节点主机。
 
