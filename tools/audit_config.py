@@ -34,7 +34,7 @@ if not text.endswith('\n') or '\r' in text or '\ufeff' in text: fail('profile mu
 sec=parse(text)
 if list(sec)!=['General','Host','Proxy','Proxy Group','Rule']: fail(f'section order mismatch: {list(sec)}')
 g=kv(sec['General'],'General')
-required={'include-all-networks':'true','include-local-networks':'false','include-apns':'true','include-cellular-services':'false','ipv6':'true','compatibility-mode':'3','hijack-dns':'*:53','allow-dns-svcb':'false','use-local-host-item-for-proxy':'false','encrypted-dns-follow-outbound-mode':'true','udp-policy-not-supported-behaviour':'REJECT','block-quic':'all-proxy'}
+required={'include-all-networks':'true','include-local-networks':'false','include-apns':'true','include-cellular-services':'false','ipv6':'true','compatibility-mode':'3','hijack-dns':'*:53','allow-dns-svcb':'false','use-local-host-item-for-proxy':'false','encrypted-dns-follow-outbound-mode':'false','udp-policy-not-supported-behaviour':'REJECT','block-quic':'all-proxy'}
 for k,v in required.items():
     if g.get(k)!=v: fail(f'[General] {k}: expected {v!r}, got {g.get(k)!r}')
 groups=kv(sec['Proxy Group'],'Proxy Group')
@@ -92,6 +92,7 @@ if groups.get('ApplePush','').split(',')[0].strip()!='fallback': fail('ApplePush
 if 'Proxy' not in groups.get('EncryptedDNS','') or 'DIRECT' not in groups.get('EncryptedDNS',''): fail('EncryptedDNS fallback members missing')
 if 'Proxy' not in groups.get('ApplePush','') or 'DIRECT' not in groups.get('ApplePush',''): fail('ApplePush fallback members missing')
 if not g.get('encrypted-dns-server','').startswith('https://1.1.1.1/dns-query'): fail('encrypted DNS endpoint invariant failed')
+if g.get('dns-server') != '223.5.5.5, 114.114.114.114': fail('domestic DNS bootstrap invariant failed')
 if 'system' in g.get('dns-server','').lower(): fail('system DNS cannot be an upstream')
 if len(rules)!=len(set(rules)): fail('duplicate active rules detected')
 if LOCK.exists() and PROFILE.resolve()==(ROOT/'Surge.conf').resolve():

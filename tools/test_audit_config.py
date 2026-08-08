@@ -38,6 +38,14 @@ mutations = {
     ),
     "capture_apns": ("\ninclude-apns = true\n", "\ninclude-apns = false\n"),
     "capture_all": ("\ninclude-all-networks = true\n", "\ninclude-all-networks = false\n"),
+    "encrypted_dns_proxy_loop": (
+        "\nencrypted-dns-follow-outbound-mode = false\n",
+        "\nencrypted-dns-follow-outbound-mode = true\n",
+    ),
+    "domestic_dns_bootstrap": (
+        "\ndns-server = 223.5.5.5, 114.114.114.114\n",
+        "\ndns-server = 1.1.1.1, 9.9.9.9\n",
+    ),
     "dns_direct": (
         "\nPROTOCOL,DOH,EncryptedDNS\n",
         "\nPROTOCOL,DOH,DIRECT\n",
