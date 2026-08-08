@@ -34,11 +34,22 @@ if not text.endswith('\n') or '\r' in text or '\ufeff' in text: fail('profile mu
 sec=parse(text)
 if list(sec)!=['General','Host','Proxy','Proxy Group','Rule']: fail(f'section order mismatch: {list(sec)}')
 g=kv(sec['General'],'General')
-required={'include-all-networks':'true','include-local-networks':'false','include-apns':'true','include-cellular-services':'false','ipv6':'true','compatibility-mode':'3','hijack-dns':'*:53','allow-dns-svcb':'false','use-local-host-item-for-proxy':'false','encrypted-dns-follow-outbound-mode':'true','udp-policy-not-supported-behaviour':'REJECT','block-quic':'all-proxy'}
+required={'include-all-networks':'true','include-local-networks':'false','include-apns':'true','include-cellular-services':'false','ipv6':'true','compatibility-mode':'3','hijack-dns':'*:53','allow-dns-svcb':'false','use-local-host-item-for-proxy':'false','encrypted-dns-follow-outbound-mode':'true','udp-policy-not-supported-behaviour':'REJECT','block-quic':'all-proxy','test-timeout':'8'}
 for k,v in required.items():
     if g.get(k)!=v: fail(f'[General] {k}: expected {v!r}, got {g.get(k)!r}')
 groups=kv(sec['Proxy Group'],'Proxy Group')
 if len(groups)!=32: fail(f'expected 32 groups, got {len(groups)}')
+proxy_group=[part.strip() for part in groups.get('Proxy','').split(',')]
+if len(proxy_group)<2 or proxy_group[:2]!=['select','AllServer']:
+    fail('Proxy must default to AllServer before regional groups')
+all_server=groups.get('AllServer','')
+if not all_server.startswith('fallback,'):
+    fail('AllServer must use fallback mode')
+for option in ('update-interval=3600','interval=60','timeout=300','evaluate-before-use=true','include-all-proxies=true'):
+    if option not in all_server:
+        fail(f'AllServer missing legacy stability option: {option}')
+if 'policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL' not in all_server:
+    fail('public profile must keep the non-routable subscription placeholder')
 rules=active(sec['Rule'])
 if rules[-1]!='FINAL,Final,dns-failed': fail('FINAL invariant failed')
 if any(x.startswith('RULE-SET,') for x in rules): fail('runtime RULE-SET is forbidden')

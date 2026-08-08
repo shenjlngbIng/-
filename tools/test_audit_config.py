@@ -38,6 +38,13 @@ mutations = {
     ),
     "capture_apns": ("\ninclude-apns = true\n", "\ninclude-apns = false\n"),
     "capture_all": ("\ninclude-all-networks = true\n", "\ninclude-all-networks = false\n"),
+    "test_timeout": ("\ntest-timeout = 8\n", "\ntest-timeout = 5\n"),
+    "proxy_default": ("\nProxy = select, AllServer,", "\nProxy = select, HongKong,"),
+    "allserver_mode": ("\nAllServer = fallback,", "\nAllServer = select,"),
+    "public_subscription": (
+        "policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL",
+        "policy-path=https://private.example/subscription",
+    ),
     "dns_direct": (
         "\nPROTOCOL,DOH,EncryptedDNS\n",
         "\nPROTOCOL,DOH,DIRECT\n",
