@@ -9,6 +9,7 @@
 - 主配置不包含 `Sub-Store Core`、`Sub-Store Simple` 或 Vendor/Sub-Store 文件。
 - `AllServer` 使用 `fallback`，每 60 秒检查节点，单个节点超时 300 秒，启动前先评估可用性。
 - `Proxy` 默认优先使用 `AllServer`，然后才是地区组。
+- 加密 DNS 使用 `DIRECT` 出站并绕过代理规则，避免代理服务器域名被加密 DNS 请求反向解析而形成循环。
 - 真实订阅链接、节点、密码、Token、MITM 私钥和证书不进入公开仓库。
 - `Fail-Closed` 显示红色是预期行为，它是故障关闭哨兵，不是真实代理节点。
 
@@ -159,7 +160,7 @@ ApplePush = fallback, Proxy, DIRECT, interval=60, timeout=300, no-alert=0, hidde
 
 ### 加密 DNS
 
-本版保留 Cloudflare 与 Quad9 的加密 DNS 配置，并将有效的 `DOH`、`DOH3`、`DOQ` 流量交给 `EncryptedDNS`。无效的 `PROTOCOL,DOT` 和 `PROTOCOL,DNS` 规则不再保留。明文 DNS、DoT 和常见 DNS 绕过端口继续阻断。
+本版保留 Cloudflare 与 Quad9 的加密 DNS 配置。`encrypted-dns-follow-outbound-mode = false` 让加密 DNS 连接固定使用 `DIRECT` 并绕过代理规则，避免节点服务器使用域名时出现 DNS 代理循环；DNS 请求本身仍然通过 HTTPS 加密。有效的 `DOH`、`DOH3`、`DOQ` 规则快照继续保留，无效的 `PROTOCOL,DOT` 和 `PROTOCOL,DNS` 规则不再保留。明文 DNS、DoT 和常见 DNS 绕过端口继续阻断。
 
 ## 仓库覆盖与删除清单
 
