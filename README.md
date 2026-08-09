@@ -61,10 +61,10 @@ ZIP 只是一种交付形式。Surge 读取的是配置文本，GitHub 读取的
 | --- | --- |
 | 适用客户端 | Surge iOS 5.14.6 及以上 |
 | 配置模式 | rule mode |
-| 主配置有效顶层规则 | 90 条 |
-| 规则来源 | 27 个本地维护规则集 + 5 个固定上游总规则 |
+| 主配置有效顶层规则 | 86 条 |
+| 规则来源 | 28 个本地维护规则集（26 个 RULE-SET + 2 个 DOMAIN-SET） |
 | 规则锁文件 | 2 个 |
-| 维护脚本 | 11 个 Python 文件 |
+| 维护脚本 | 12 个 Python 文件 |
 | GitHub Actions | 2 个工作流 |
 | IPv6 | 已启用 |
 | Wi-Fi 与蜂窝数据 | 纳入 Surge 接管范围 |
@@ -96,11 +96,11 @@ ZIP 只是一种交付形式。Surge 读取的是配置文本，GitHub 读取的
 ├── CONTRIBUTING.md
 ├── .gitignore
 ├── Rules/
-│   ├── 27 个规则集 list 文件
+│   ├── 28 个规则集 list 文件
 │   ├── r10.lock.json
 │   └── upstreams.lock.json
 ├── tools/
-│   └── 11 个维护脚本
+│   └── 12 个维护脚本
 ├── .github/
 │   └── workflows/
 │       ├── audit.yml
@@ -138,7 +138,8 @@ README、清单、校验文件和许可证都属于发布内容。只上传 Surg
 仓库根目录/
 ├── Surge.conf
 └── Rules/
-    └── ChinaDomain.list
+    ├── China.list
+    └── Global.list
 ```
 
 仓库默认使用 main 分支。若实际分支名称不同，需要同步修改 Surge.conf 中的仓库 CDN 地址，并重新生成锁文件、发布清单和 SHA-256。
@@ -156,7 +157,7 @@ Actions 通过以后，才适合继续排查 Surge 外部资源。若审计失�
 | 地址 | 用途 |
 | --- | --- |
 | 主配置 Raw 地址 | Surge 导入主配置 |
-| 规则集 CDN 地址 | Surge 读取单个 RULE-SET |
+| 规则集 CDN 地址 | Surge 读取单个 RULE-SET 或 DOMAIN-SET |
 | Sub-Store Surge 输出地址 | AllServer 读取节点策略 |
 
 仓库主配置地址示例。
@@ -168,7 +169,7 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 仓库规则集通过 jsDelivr 读取，避免中国网络环境下 GitHub Raw 不稳定。规则集地址示例。
 
 ```
-https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/ChinaDomain.list
+https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/China.list
 ```
 
 Sub-Store 输出地址示例。
@@ -219,7 +220,7 @@ AllServer = fallback, Fail-Closed, policy-path=https://sub.store/download/你的
 6. 选择节点并等待测速。
 7. 再按需更新规则集。
 
-AllServer 和 RULE-SET 是两项独立流程。订阅出错时，不建议一次更新全部外部资源，否则很难判断具体故障位置。
+AllServer 和外置规则集是两项独立流程。订阅出错时，不建议一次更新全部外部资源，否则很难判断具体故障位置。
 
 ## Core、Simple 和模块资源
 
@@ -394,7 +395,7 @@ DNS 主机的普通解析路径仍由 General 和 Host 配置决定。这个策�
 
 ## 远程规则集
 
-主配置引用仓库中的 27 个维护规则集，并补充固定版本的上游 Direct、China 和 Global 总规则。仓库规则通过 jsDelivr 读取，上游总规则按 Surge 5.14.6+ 兼容方式拆为 RULE-SET 与 DOMAIN-SET。这样专用服务规则优先命中，未覆盖的国内流量走 DIRECT，未覆盖的国外流量走 Proxy。规则内容始终保存在独立文件中，主配置不内嵌规则快照。
+主配置只引用仓库中的 28 个维护规则集，并通过 jsDelivr 读取。运行链不再加载上游 Direct、China、Global 及其巨型域名集合；两个精确 `DOMAIN-SET` 负责明确国内外域名。专用服务规则优先命中，明确国内域名走 DIRECT，明确国外域名走 Proxy；未列出的流量继续由 `GEOIP,CN` 和 `FINAL` 兜底。规则内容始终保存在独立文件中，主配置不内嵌规则快照。
 
 ### 规则集清单
 
@@ -404,8 +405,9 @@ DNS 主机的普通解析路径仍由 General 和 Host 配置决定。这个策�
 | AppleCN.list | Apple | Apple 国内服务 |
 | WeChat.list | DIRECT | 微信服务 |
 | Direct.list | DIRECT | 精选国内服务 |
-| ChinaDomain.list | DIRECT | 本地补充国内域名 |
-| Ads_Custom_Extra.list | AdBlock | 广告和追踪 |
+| China.list | DIRECT | 306 条明确归属的国内域名 |
+| Global.list | Proxy | 116 条明确归属的国外域名 |
+| Ads.list | AdBlock | 广告和追踪 |
 | ChatGPT.list | ChatGPT | ChatGPT |
 | Claude.list | Claude | Claude |
 | Gemini.list | Gemini | Gemini |
@@ -428,14 +430,7 @@ DNS 主机的普通解析路径仍由 General 和 Host 配置决定。这个策�
 | Microsoft.list | Microsoft | Microsoft 服务 |
 | Game.list | Games | 游戏服务 |
 
-固定上游总规则使用 `blackmatrix7/ios_rule_script` 提交
-`ccc2d6b711007324bacb55cdfbbf7e36ad48145a`，按 Surge 兼容格式加载：
-
-| 上游规则 | 策略 | 作用 |
-| --- | --- | --- |
-| Direct.list | DIRECT | 上游精选直连例外 |
-| China.list + China_Domain.list | DIRECT | 国内 IP、关键词和域名 |
-| Global.list + Global_Domain.list | Proxy | 未被专用规则覆盖的国外流量 |
+两个精确域名集不收录 `.cn`、`.com` 等整段公共后缀，不使用 `DOMAIN-KEYWORD`，也不把 AWS、Azure、Cloudflare、Akamai 等共享基础设施强行归到某一侧。国内集和国外集之间必须保持零后缀冲突。
 
 ### 规则匹配顺序
 
@@ -449,18 +444,16 @@ Surge 按从上到下的顺序匹配规则，先命中的规则结束本次匹�
 → ChatGPT、Claude、Gemini
 → 流媒体
 → Telegram、GitHub、X、Google、Microsoft 和游戏
-→ 上游 Direct
-→ 上游 China 与 China_Domain
-→ 上游 Global 与 Global_Domain
-→ ChinaDomain 本地补充
+→ China
+→ Global
 → GEOIP,CN,DIRECT
 → STUN
 → FINAL
 ```
 
-ChinaDomain 本地补充表放在上游 Global 之后，避免本地旧条目提前覆盖上游国外判断。YouTube、Google、Microsoft 等专用服务必须先于国内总规则命中；国内总规则统一使用 DIRECT，国外总规则统一使用 Proxy。
+YouTube、ChatGPT、Google、Microsoft 等专用服务必须先于精确总分流命中。国内精确集统一使用 DIRECT，国外精确集统一使用 Proxy；审计脚本会拒绝重复后缀、共享云/CDN、格式错误及国内外交叉冲突。
 
-当前配置没有只依赖 GEOIP 或宽泛的 DOMAIN-SUFFIX,cn,DIRECT，而是同时使用上游域名、关键词和 IP 规则。修改规则顺序会改变服务专用分流边界。
+当前配置不使用宽泛的 `DOMAIN-SUFFIX,cn,DIRECT`，也不尝试通过巨型域名表覆盖整个互联网。明确域名由精确集处理，未知国内地址由 GEOIP 处理，其他未知流量由 FINAL 代理。修改规则顺序会改变服务专用分流边界。
 
 ### 规则集暂时无法访问
 
@@ -482,13 +475,13 @@ Scam、Quarantine、Malware IOC 等威胁情报列表更新快，误判会直接
 
 ### Rules/upstreams.lock.json
 
-记录规则集上游来源和当前锁定信息，用于审计规则来源变化。
+记录规则集上游来源、精确域名集的数量与摘要，用于审计规则来源和人工维护变化。
 
 ### RELEASE_MANIFEST.txt
 
-记录进入发布包的正式文件。当前清单记录 52 个文件。
+记录进入发布包的正式文件。当前清单记录 54 个文件。
 
-SHA256SUMS.txt、SHA256SUMS_fixed.txt 和 RELEASE_MANIFEST.txt 本身属于发布附属文件，因此最终 ZIP 的非目录文件总数为 55 个。
+SHA256SUMS.txt、SHA256SUMS_fixed.txt 和 RELEASE_MANIFEST.txt 本身属于发布附属文件，因此最终 ZIP 的非目录文件总数为 57 个。
 
 ### SHA256SUMS.txt
 
@@ -509,6 +502,7 @@ python3 tools/convert_to_remote_rules.py
 python3 tools/embed_runtime_rules.py
 python3 tools/audit_config.py
 python3 tools/audit_rules.py
+python3 tools/audit_precise_domains.py
 python3 tools/test_audit_config.py
 python3 tools/test_stage_surge_zip.py
 python3 -m compileall -q tools
@@ -522,12 +516,13 @@ cmp --silent SHA256SUMS.txt SHA256SUMS_fixed.txt
 当前版本的预期结果如下。
 
 ```text
-PASS: remote-only profile; external_rules=32 embedded_rule_contents=0
-PASS R12 rules=90
-PASS R12 remote_sources=27 rules=90
+PASS: remote-only profile; external_rules=28 embedded_rule_contents=0
+PASS R12 rules=86
+PASS R12 remote_sources=28 rules=86
+PASS precise domains DIRECT=306:b24bdadb5a71 Proxy=116:6751276b9090 conflicts=0
 PASS mutations=18
 PASS: ZIP allowlist regression cases=13
-PACKAGED: files=55
+PACKAGED: files=57
 SHA256SUMS.txt 全部 OK
 SHA256SUMS.txt 与 SHA256SUMS_fixed.txt 一致
 ```
@@ -580,17 +575,17 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 再检查任意一个规则集。
 
 ```
-https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/ChinaDomain.list
+https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/China.list
 ```
 
-正常结果应当显示 DOMAIN、DOMAIN-SUFFIX、IP-CIDR 等规则行。
+正常结果应当显示以点开头的 DOMAIN-SET 域名条目。
 
 出现下面情况时，优先检查仓库路径和分支。
 
 - 打开的是 GitHub 网页而非纯文本。
 - 返回 404。
 - 下载内容前面多了一层目录名。
-- Surge.conf 可以打开，但 Rules/ChinaDomain.list 的 CDN 地址无法打开。
+- Surge.conf 可以打开，但 Rules/China.list 的 CDN 地址无法打开。
 - 文件被上传到了其他分支。
 - 仓库是私有仓库，但 Surge 无法访问对应 CDN 地址。
 
@@ -602,7 +597,7 @@ https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/ChinaDomain.list
 
 替换以后，在浏览器中打开完整的 Sub-Store Surge 输出 URL。确认 URL 没有被截断，问号后的参数仍然存在，订阅输出仍然有效。
 
-404 表示请求地址不存在。修改 DNS、ChinaDomain 或规则顺序无法恢复一个失效的订阅地址。
+404 表示请求地址不存在。修改 DNS、精确域名集或规则顺序无法恢复一个失效的订阅地址。
 
 ### AllServer 返回 500
 
@@ -667,9 +662,9 @@ allow-wifi-access=false 只禁止其他设备借用本机 Surge 代理，不影�
 
 - [ ] Surge.conf 位于仓库根目录。
 - [ ] README.md 是当前版本。
-- [ ] Rules/ 中有 27 个维护 list 文件。
+- [ ] Rules/ 中有 28 个维护 list 文件。
 - [ ] Rules/r10.lock.json 和 Rules/upstreams.lock.json 都在。
-- [ ] tools/ 中有 11 个 Python 脚本。
+- [ ] tools/ 中有 12 个 Python 脚本。
 - [ ] .github/workflows/ 中有 audit.yml 和 unpack.yml。
 - [ ] THIRD_PARTY_LICENSES/ 中的许可证文件完整。
 - [ ] 真实订阅地址没有进入公开文件。
@@ -717,13 +712,13 @@ Surge 字段语义和 DNS 行为以 [Surge 官方 DNS over HTTPS 手册](https:/
 
 ### 实际规则来源
 
-`Rules/*.list` 中的 19 个服务快照实际锁定上游为 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)，提交为 `c00517ce10760a93728b241923a451dfa617be80`；国内/国外总分流的 5 个远程规则固定在提交 `ccc2d6b711007324bacb55cdfbbf7e36ad48145a`。许可证为 GPL-2.0。具体上游路径、快照摘要、总规则来源和排除项记录在 `Rules/upstreams.lock.json`，许可证副本位于 `THIRD_PARTY_LICENSES/`。
+`Rules/*.list` 中的 19 个服务快照实际锁定上游为 [blackmatrix7/ios_rule_script](https://github.com/blackmatrix7/ios_rule_script)，提交为 `c00517ce10760a93728b241923a451dfa617be80`。两个精确域名集和其余本地规则由本仓库审核维护；运行时不再直接加载上游 Direct、China 或 Global 总规则。许可证为 GPL-2.0。具体上游路径、快照摘要、精确集摘要和排除项记录在 `Rules/upstreams.lock.json`，许可证副本位于 `THIRD_PARTY_LICENSES/`。
 
 ### 本仓库自行维护的部分
 
 - `Surge.conf` 的策略组、DNS 引导、APNs 路由和失败关闭边界
-- 27 个仓库自有 CDN 规则地址及其策略映射
-- `ChinaDomain` 的规则顺序和国内流量处理方式
+- 28 个仓库自有 CDN 规则地址及其策略映射
+- 国内/国外精确域名集、零冲突边界及其规则顺序
 - 规则锁、配置审计、ZIP 白名单测试、发布清单和 SHA-256 校验
 - 部署说明、故障排查、安全边界和 GitHub Actions 工作流
 
