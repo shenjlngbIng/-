@@ -4,6 +4,16 @@
 
 本仓库发布 Surge iOS Privacy + Push R12 配置及维护工具。`Surge.conf` 中的第三方规则版权归各自作者或项目所有，相关许可证副本位于 `THIRD_PARTY_LICENSES/`。
 
+本配置的设计过程参考了以下公开项目。
+
+- [Rabbit-Spec Surge Developer](https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/Spec/Surge-Developer.conf)
+- [Rabbit-Spec Surge EN](https://raw.githubusercontent.com/Rabbit-Spec/Surge/Master/Conf/Spec/Surge-EN.conf)
+- [As-Lucky Lucky](https://raw.githubusercontent.com/As-Lucky/Lucky/main/Lucky-Surge.conf)
+- [Coldvvater Surge 配置](https://gist.githubusercontent.com/Coldvvater/8093bc6be4340b5324b4a343493becfe/raw/Surge,conf)
+- [Thoseyearsbrian Aegis](https://github.com/Thoseyearsbrian/Aegis) 及其 [Aegis_TC.conf](https://raw.githubusercontent.com/Thoseyearsbrian/Aegis/main/config/Aegis_TC.conf)
+
+上述项目用于比较 Surge 章节组织、DNS 处理、规则集引用、策略组设计和安全边界。当前仓库重新维护自己的配置、策略组、规则顺序、审计工具和发布流程，公开包不包含这些项目的节点、订阅、Token、脚本或证书材料。运行时规则的实际上游以 `Rules/upstreams.lock.json` 为准。
+
 本仓库的原创维护内容包括：
 
 - Surge 配置结构与策略组设计
