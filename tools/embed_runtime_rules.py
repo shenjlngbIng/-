@@ -27,7 +27,7 @@ lock.update({
         'telegram': 'forced-proxy',
         'apns_capture': 'enabled',
         'apns_fallback': 'ApplePush_then_DIRECT',
-        'encrypted_dns': 'EncryptedDNS_then_encrypted_DIRECT',
+        'encrypted_dns': 'EncryptedDNS_direct_bypass',
         'capture': {
             'include-all-networks': 'true',
             'include-local-networks': 'false',

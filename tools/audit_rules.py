@@ -40,7 +40,7 @@ if invariants.get("apns_capture") != "enabled":
     fail("lock APNs capture invariant mismatch")
 if invariants.get("apns_fallback") != "ApplePush_then_DIRECT":
     fail("lock APNs fallback invariant mismatch")
-if invariants.get("encrypted_dns") != "EncryptedDNS_then_encrypted_DIRECT":
+if invariants.get("encrypted_dns") != "EncryptedDNS_direct_bypass":
     fail("lock encrypted DNS invariant mismatch")
 
 # A staged ZIP may contain Rules without Surge.conf. In that mode, validate only

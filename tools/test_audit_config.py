@@ -38,6 +38,10 @@ mutations = {
     ),
     "capture_apns": ("\ninclude-apns = true\n", "\ninclude-apns = false\n"),
     "capture_all": ("\ninclude-all-networks = true\n", "\ninclude-all-networks = false\n"),
+    "encrypted_dns_follow": (
+        "\nencrypted-dns-follow-outbound-mode = false\n",
+        "\nencrypted-dns-follow-outbound-mode = true\n",
+    ),
     "test_timeout": ("\ntest-timeout = 8\n", "\ntest-timeout = 5\n"),
     "proxy_default": ("\nProxy = select, AllServer,", "\nProxy = select, HongKong,"),
     "allserver_mode": ("\nAllServer = fallback,", "\nAllServer = select,"),
