@@ -1,5 +1,17 @@
 # 更新日志
 
+## 2026-08-09 R12.12 国内外总分流修正
+
+### 修正
+
+- 将仓库维护规则从 GitHub Raw 切换到 jsDelivr，降低中国网络环境下规则集首次加载失败的概率。
+- 按 blackmatrix7/ios_rule_script 固定提交 `ccc2d6b711007324bacb55cdfbbf7e36ad48145a` 增加 Direct、China、China_Domain、Global 和 Global_Domain 五个上游总规则。
+- 将 WeChat、Direct、ChinaDomain 和 GEOIP,CN 的策略统一改为 `DIRECT`，避免国内流量因手动策略组选择被误送进代理。
+- 从本地 ChinaDomain 补充表中移除与上游 Global 冲突的 Battle.net、Blizzard、Futu5 和 Futunn 条目，避免国内表提前截获国外流量。
+- 保留 YouTube、Google、Microsoft 等专用规则在 China/Global 总规则之前，避免专用服务被国内总规则或国外兜底覆盖。
+- 删除宽泛的 QUIC、UDP 规则，仅保留 STUN 代理分流，避免不支持 UDP 的节点直接阻断 YouTube 回落到 TCP。
+- 移除香港、台湾、日本、新加坡和美国地区组对“专用/解锁”节点的误排除，保留地区关键词筛选。
+
 ## 2026-08-09 R12.11 参考来源集中说明
 
 ### 文档
@@ -131,7 +143,7 @@
 
 - APNs 改为独立 `ApplePush` Fallback，代理优先、直连故障回落。
 - 启用 `include-all-networks` 与 `include-apns`，覆盖移动数据下的系统推送。
-- 加入 APNs 本地快照，并同步嵌入 `Surge.conf`，避免运行时依赖远程规则。
+- 早期版本曾将 APNs 快照嵌入 `Surge.conf`；当前远程规则模式已移除这种做法，APNs 通过独立规则文件引用。
 - 加密 DNS 改用 Cloudflare 与 Quad9 IP 端点，按 `EncryptedDNS` 代理优先、加密直连回落。
 - 保持 Telegram 强制代理及既有国内外分流，不引入全量 Apple 代理规则。
 

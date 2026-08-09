@@ -13,11 +13,12 @@
 ## 修改流程
 
 1. 修改配置或规则源。
-2. 运行 `python3 tools/embed_runtime_rules.py`。
-3. 执行全部审计和测试。
-4. 重新生成 `SHA256SUMS.txt`。
-5. 检查差异和敏感信息。
-6. 在提交说明中描述行为变化及验证结果。
+2. 运行 `python3 tools/convert_to_remote_rules.py`，确认主配置只引用外部规则集。
+3. 运行 `python3 tools/embed_runtime_rules.py` 刷新元数据；该历史文件名不会嵌入规则内容。
+4. 执行全部审计、打包和测试。
+5. 重新生成 `RELEASE_MANIFEST.txt`、`SHA256SUMS.txt` 和 `SHA256SUMS_fixed.txt`。
+6. 检查差异和敏感信息。
+7. 在提交说明中描述行为变化及验证结果。
 
 ## 必须通过的命令
 
@@ -26,5 +27,6 @@ python3 tools/audit_config.py
 python3 tools/audit_rules.py
 python3 tools/test_audit_config.py
 python3 tools/test_stage_surge_zip.py
+python3 tools/package_release.py --output ../Surge-R12-release.zip
 sha256sum -c SHA256SUMS.txt
 ```
