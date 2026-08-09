@@ -28,7 +28,7 @@ files = sorted(
 )
 lines = [
     "Surge iOS Privacy + Push R12 release manifest",
-    "Generated: 2026-08-08",
+    "Generated: 2026-08-09",
     f"Files: {len(files)}",
     "",
 ]

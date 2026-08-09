@@ -29,18 +29,30 @@ assert run(BASE).returncode == 0, "baseline"
 mutations = {
     "final_open": ("\nFINAL,Final,dns-failed\n", "\nFINAL,DIRECT\n"),
     "telegram_direct": (
-        "\nDOMAIN-SUFFIX,t.me,Telegram\n",
-        "\nDOMAIN-SUFFIX,t.me,DIRECT\n",
+        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/Telegram.list,Telegram\n",
+        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/Telegram.list,DIRECT\n",
     ),
     "apns_direct": (
-        "\nDOMAIN-SUFFIX,push.apple.com,ApplePush\n",
-        "\nDOMAIN-SUFFIX,push.apple.com,DIRECT\n",
+        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/APNs.list,ApplePush\n",
+        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/APNs.list,DIRECT\n",
     ),
     "capture_apns": ("\ninclude-apns = true\n", "\ninclude-apns = false\n"),
     "capture_all": ("\ninclude-all-networks = true\n", "\ninclude-all-networks = false\n"),
     "encrypted_dns_follow": (
         "\nencrypted-dns-follow-outbound-mode = false\n",
         "\nencrypted-dns-follow-outbound-mode = true\n",
+    ),
+    "dns_server": (
+        "\ndns-server = 223.5.5.5, 223.6.6.6\n",
+        "\ndns-server = system, 223.5.5.5, 119.29.29.29\n",
+    ),
+    "encrypted_dns_server": (
+        "\nencrypted-dns-server = https://dns.alidns.com/dns-query, tls://dns.alidns.com\n",
+        "\nencrypted-dns-server = https://1.1.1.1/dns-query, https://9.9.9.9/dns-query\n",
+    ),
+    "dns_bootstrap": (
+        "dns.alidns.com = 223.5.5.5",
+        "dns.alidns.com = 1.1.1.1",
     ),
     "test_timeout": ("\ntest-timeout = 8\n", "\ntest-timeout = 5\n"),
     "proxy_default": ("\nProxy = select, AllServer,", "\nProxy = select, HongKong,"),
@@ -60,6 +72,14 @@ mutations = {
     "runtime_ruleset": (
         "\nFINAL,Final,dns-failed\n",
         "\nRULE-SET,https://example.invalid/a.list,Proxy\nFINAL,Final,dns-failed\n",
+    ),
+    "remote_host": (
+        "https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/ChatGPT.list",
+        "https://example.invalid/ChatGPT.list",
+    ),
+    "remote_http": (
+        "https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/ChatGPT.list",
+        "http://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/ChatGPT.list",
     ),
 }
 

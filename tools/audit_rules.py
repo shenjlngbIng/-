@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the R12 profile lock and committed rule snapshots."""
+"""Validate the R12 remote RULE-SET inventory and published rule sources."""
 
 from __future__ import annotations
 
@@ -7,6 +7,9 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+
+from convert_to_remote_rules import REMOTE_BASE, REMOTE_RULES
+
 
 ROOT = Path(__file__).resolve().parent.parent
 PROFILE = ROOT / "Surge.conf"
@@ -31,8 +34,10 @@ if not LOCK.is_file():
     fail(f"lock file not found: {LOCK}")
 
 lock = json.loads(LOCK.read_text(encoding="utf-8"))
-if lock.get("schema") != 4:
+if lock.get("schema") != 5:
     fail(f"unsupported lock schema: {lock.get('schema')!r}")
+if lock.get("mode") != "remote-ruleset":
+    fail("lock mode must be remote-ruleset")
 if lock.get("profile") != "Surge iOS Privacy + Push R12":
     fail("lock profile name mismatch")
 invariants = lock.get("required_invariants", {})
@@ -42,9 +47,48 @@ if invariants.get("apns_fallback") != "ApplePush_then_DIRECT":
     fail("lock APNs fallback invariant mismatch")
 if invariants.get("encrypted_dns") != "EncryptedDNS_direct_bypass":
     fail("lock encrypted DNS invariant mismatch")
+if invariants.get("dns_server") != "223.5.5.5, 223.6.6.6":
+    fail("lock DNS server invariant mismatch")
+if invariants.get("encrypted_dns_server") != "https://dns.alidns.com/dns-query, tls://dns.alidns.com":
+    fail("lock encrypted DNS server invariant mismatch")
+if invariants.get("dns_bootstrap") != {"dns.alidns.com": ["223.5.5.5", "223.6.6.6", "2400:3200::1"]}:
+    fail("lock DNS bootstrap invariant mismatch")
 
-# A staged ZIP may contain Rules without Surge.conf. In that mode, validate only
-# the rule inventory. The repository checkout additionally validates profile metadata.
+expected_sources = {
+    filename: {"url": f"{REMOTE_BASE}{filename}", "policy": policy}
+    for filename, _label, policy in REMOTE_RULES
+}
+raw_sources = lock.get("remote_sources")
+if not isinstance(raw_sources, list):
+    fail("remote_sources is missing")
+if len(raw_sources) != len(expected_sources):
+    fail(f"expected {len(expected_sources)} remote sources, found {len(raw_sources)}")
+
+seen: set[str] = set()
+for raw in raw_sources:
+    item = dict(raw)
+    filename = str(item.get("file", ""))
+    if filename in seen:
+        fail(f"duplicate remote source: {filename}")
+    seen.add(filename)
+    expected = expected_sources.get(filename)
+    if expected is None:
+        fail(f"remote source is not declared by the profile: {filename}")
+    if item.get("url") != expected["url"]:
+        fail(f"remote URL mismatch for {filename}")
+    if item.get("policy") != expected["policy"]:
+        fail(f"remote policy mismatch for {filename}")
+    if not isinstance(item.get("active_entries"), int) or item["active_entries"] < 1:
+        fail(f"invalid active entry count for {filename}")
+    if not isinstance(item.get("sha256"), str) or len(item["sha256"]) != 64:
+        fail(f"invalid SHA-256 for {filename}")
+
+if seen != set(expected_sources):
+    fail(f"remote source inventory mismatch: missing={sorted(set(expected_sources) - seen)}")
+
+# A staged ZIP may contain Rules without Surge.conf. In that mode validate the
+# remote source inventory only. The repository checkout additionally validates
+# profile metadata and the exact RULE-SET references.
 profile = PROFILE if RULES == DEFAULT_RULES else RULES.parent / "Surge.conf"
 if profile.is_file():
     text = profile.read_text(encoding="utf-8")
@@ -60,26 +104,35 @@ if profile.is_file():
         fail("profile line count mismatch")
     if lock.get("active_rules") != len(active_rules):
         fail("active rule count mismatch")
+    actual_remote = {
+        line.split(",", 2)[1]: line.split(",", 2)[2]
+        for line in active_rules
+        if line.startswith("RULE-SET,") and len(line.split(",", 2)) == 3
+    }
+    expected_remote = {item["url"]: item["policy"] for item in raw_sources}
+    if actual_remote != expected_remote:
+        fail("profile remote RULE-SET references do not match the lock")
 
 errors: list[str] = []
-source_names = {str(item["file"]) for item in lock.get("embedded_sources", [])}
-if "APNs.list" not in source_names:
-    errors.append("APNs.list is not embedded in the lock")
-for item in lock.get("embedded_sources", []):
+for raw in raw_sources:
+    item = dict(raw)
     filename = str(item["file"])
     path = RULES / filename
     if not path.is_file():
         errors.append(f"missing source: {filename}")
         continue
-    actual = len(active_lines(path))
-    expected = int(item["active_entries"])
-    if actual != expected:
-        errors.append(f"{filename}: expected {expected}, got {actual}")
+    actual_count = len(active_lines(path))
+    expected_count = int(item["active_entries"])
+    if actual_count != expected_count:
+        errors.append(f"{filename}: expected {expected_count} active entries, got {actual_count}")
+    actual_sha256 = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual_sha256 != item["sha256"]:
+        errors.append(f"{filename}: source SHA-256 mismatch")
 
 if errors:
     raise AssertionError("\n".join(errors))
 
 print(
-    f"PASS R12 sources={len(lock.get('embedded_sources', []))} "
+    f"PASS R12 remote_sources={len(raw_sources)} "
     f"rules={lock.get('active_rules')}"
 )

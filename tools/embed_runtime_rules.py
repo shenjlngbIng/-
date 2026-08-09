@@ -1,41 +1,86 @@
 #!/usr/bin/env python3
-"""Refresh R12 lock metadata after an intentional, reviewed Surge.conf update.
-This does not download or replace rules. It records the checked profile hash, line count,
-active rule count, and source counts already declared in embedded block comments.
+"""Refresh R12 metadata after converting to remote RULE-SET sources.
+
+The filename is retained for compatibility with older maintenance commands;
+the remote profile no longer embeds the rule contents into Surge.conf.
 """
+
 from __future__ import annotations
-import hashlib, json, re
+
+import datetime as dt
+import hashlib
+import json
 from pathlib import Path
-ROOT=Path(__file__).resolve().parent.parent
-PROFILE=ROOT/'Surge.conf'; LOCK=ROOT/'Rules/r10.lock.json'
-text=PROFILE.read_text(encoding='utf-8'); lines=text.splitlines(); rule_text=text.split('[Rule]',1)[1]
-active=[x.strip() for x in rule_text.splitlines() if x.strip() and not x.lstrip().startswith('#')]
-sources=[]
-for line in rule_text.splitlines():
-    m=re.match(r'#\s+([^ ]+\.list)\s+·\s+(\d+)/(\d+)\s+·\s+(.+)$',line.strip())
-    if m: sources.append({'file':m.group(1),'embedded_entries':int(m.group(2)),'active_entries':int(m.group(3)),'policy':m.group(4)})
-lock=json.loads(LOCK.read_text(encoding='utf-8')) if LOCK.exists() else {'schema':4}
-lock.update({
-    'schema': 4,
-    'profile': 'Surge iOS Privacy + Push R12',
-    'generated': '2026-08-08',
-    'profile_sha256': hashlib.sha256(text.encode()).hexdigest(),
-    'profile_lines': len(lines),
-    'active_rules': len(active),
-    'required_invariants': {
-        'final': 'FINAL,Final,dns-failed',
-        'telegram': 'forced-proxy',
-        'apns_capture': 'enabled',
-        'apns_fallback': 'ApplePush_then_DIRECT',
-        'encrypted_dns': 'EncryptedDNS_direct_bypass',
-        'capture': {
-            'include-all-networks': 'true',
-            'include-local-networks': 'false',
-            'include-apns': 'true',
-            'include-cellular-services': 'false',
+
+from convert_to_remote_rules import REMOTE_BASE, REMOTE_RULES
+
+
+ROOT = Path(__file__).resolve().parent.parent
+PROFILE = ROOT / "Surge.conf"
+LOCK = ROOT / "Rules/r10.lock.json"
+
+
+def active_count(path: Path) -> int:
+    return sum(
+        1
+        for line in path.read_text(encoding="utf-8-sig").splitlines()
+        if line.strip() and not line.lstrip().startswith(("#", ";", "//"))
+    )
+
+
+text = PROFILE.read_text(encoding="utf-8")
+lock = json.loads(LOCK.read_text(encoding="utf-8")) if LOCK.exists() else {}
+remote_sources = []
+for filename, _label, policy in REMOTE_RULES:
+    path = ROOT / "Rules" / filename
+    if not path.is_file():
+        raise SystemExit(f"missing remote source file: {path}")
+    remote_sources.append(
+        {
+            "file": filename,
+            "url": f"{REMOTE_BASE}{filename}",
+            "policy": policy,
+            "active_entries": active_count(path),
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+    )
+
+lock.update(
+    {
+        "schema": 5,
+        "mode": "remote-ruleset",
+        "profile": "Surge iOS Privacy + Push R12",
+        "generated": dt.date.today().isoformat(),
+        "source_repository": "shenjlngbIng/-",
+        "profile_sha256": hashlib.sha256(text.encode()).hexdigest(),
+        "profile_lines": len(text.splitlines()),
+        "active_rules": sum(
+            1
+            for line in text.split("[Rule]", 1)[1].splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        ),
+        "required_invariants": {
+            "final": "FINAL,Final,dns-failed",
+            "final_strict_choice": "REJECT",
+            "telegram": "forced-proxy",
+            "apns_capture": "enabled",
+            "apns_fallback": "ApplePush_then_DIRECT",
+            "encrypted_dns": "EncryptedDNS_direct_bypass",
+            "dns_server": "223.5.5.5, 223.6.6.6",
+            "encrypted_dns_server": "https://dns.alidns.com/dns-query, tls://dns.alidns.com",
+            "dns_bootstrap": {
+                "dns.alidns.com": ["223.5.5.5", "223.6.6.6", "2400:3200::1"],
+            },
+            "capture": {
+                "include-all-networks": "true",
+                "include-local-networks": "false",
+                "include-apns": "true",
+                "include-cellular-services": "true",
+            },
         },
-    },
-    'embedded_sources': sources,
-})
-LOCK.write_text(json.dumps(lock,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-print(f'updated {LOCK}: rules={len(active)} sources={len(sources)}')
+        "remote_sources": remote_sources,
+    }
+)
+lock.pop("embedded_sources", None)
+LOCK.write_text(json.dumps(lock, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+print(f"updated {LOCK}: remote_sources={len(remote_sources)}")
