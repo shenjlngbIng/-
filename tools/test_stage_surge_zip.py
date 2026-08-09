@@ -12,7 +12,7 @@ def main() -> int:
     allowed = {
         "Surge.conf": "Surge.conf",
         "CHANGELOG.md": "CHANGELOG.md",
-        "Rules/Ads_Custom_Extra.list": "Rules/Ads_Custom_Extra.list",
+        "Rules/Ads.list": "Rules/Ads.list",
         "Rules/upstreams.lock.json": "Rules/upstreams.lock.json",
         "Rules/r10.lock.json": "Rules/r10.lock.json",
         "Surge/NOTICE.md": "NOTICE.md",

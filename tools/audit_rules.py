@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 
-from convert_to_remote_rules import REMOTE_BASE, REMOTE_RULES
+from convert_to_remote_rules import REMOTE_BASE, REPOSITORY_RULES
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -34,7 +34,7 @@ if not LOCK.is_file():
     fail(f"lock file not found: {LOCK}")
 
 lock = json.loads(LOCK.read_text(encoding="utf-8"))
-if lock.get("schema") != 5:
+if lock.get("schema") != 6:
     fail(f"unsupported lock schema: {lock.get('schema')!r}")
 if lock.get("mode") != "remote-ruleset":
     fail("lock mode must be remote-ruleset")
@@ -55,8 +55,8 @@ if invariants.get("dns_bootstrap") != {"dns.alidns.com": ["223.5.5.5", "223.6.6.
     fail("lock DNS bootstrap invariant mismatch")
 
 expected_sources = {
-    filename: {"url": f"{REMOTE_BASE}{filename}", "policy": policy}
-    for filename, _label, policy in REMOTE_RULES
+    filename: {"kind": kind, "url": f"{REMOTE_BASE}{filename}", "policy": policy}
+    for kind, filename, _label, policy in REPOSITORY_RULES
 }
 raw_sources = lock.get("remote_sources")
 if not isinstance(raw_sources, list):
@@ -76,6 +76,8 @@ for raw in raw_sources:
         fail(f"remote source is not declared by the profile: {filename}")
     if item.get("url") != expected["url"]:
         fail(f"remote URL mismatch for {filename}")
+    if item.get("kind") != expected["kind"]:
+        fail(f"remote kind mismatch for {filename}")
     if item.get("policy") != expected["policy"]:
         fail(f"remote policy mismatch for {filename}")
     if not isinstance(item.get("active_entries"), int) or item["active_entries"] < 1:
@@ -105,12 +107,14 @@ if profile.is_file():
     if lock.get("active_rules") != len(active_rules):
         fail("active rule count mismatch")
     actual_remote = {
-        line.split(",", 2)[1]: line.split(",", 2)[2]
+        (line.split(",", 2)[0], line.split(",", 2)[1]): line.split(",", 2)[2]
         for line in active_rules
-        if line.startswith(f"RULE-SET,{REMOTE_BASE}")
+        if line.startswith((f"RULE-SET,{REMOTE_BASE}", f"DOMAIN-SET,{REMOTE_BASE}"))
         and len(line.split(",", 2)) == 3
     }
-    expected_remote = {item["url"]: item["policy"] for item in raw_sources}
+    expected_remote = {
+        (item["kind"], item["url"]): item["policy"] for item in raw_sources
+    }
     if actual_remote != expected_remote:
         fail("profile remote RULE-SET references do not match the lock")
 

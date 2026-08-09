@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """Validate the R12 profile's curated and upstream-hosted rule sources.
 
-The repository remains the source of truth for the curated rule snapshots.  The
-Surge profile loads those snapshots through jsDelivr, while the broad domestic,
-direct, and international fallbacks use a pinned upstream release.  Keeping the
-upstream routing sources explicit prevents service-specific rules from becoming
-the accidental substitute for a complete China/Global split.
+The repository remains the source of truth for curated rule snapshots. The
+Surge profile loads those snapshots through jsDelivr. Broad upstream domain
+collections are deliberately replaced with two bounded, repository-maintained
+DOMAIN-SET files. No broad upstream routing collection is loaded at runtime.
 
 This maintenance command deliberately never writes rule contents into
 ``Surge.conf``.  The historical filename is retained so existing maintenance
@@ -21,40 +20,13 @@ ROOT = Path(__file__).resolve().parent.parent
 PROFILE = ROOT / "Surge.conf"
 REMOTE_BASE = "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/"
 
-UPSTREAM_COMMIT = "ccc2d6b711007324bacb55cdfbbf7e36ad48145a"
-UPSTREAM_BASE = (
-    "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@"
-    f"{UPSTREAM_COMMIT}/rule/Surge/"
-)
-
-# blackmatrix7's legacy Surge pair is compatible with the profile's stated
-# Surge iOS 5.14.6+ floor.  China/Global *_Domain files are DOMAIN-SET files;
-# their companion list files carry IP, keyword, and user-agent rules.
-UPSTREAM_ROUTING_RULES: tuple[tuple[str, str, str, str], ...] = (
-    ("RULE-SET", f"{UPSTREAM_BASE}Direct/Direct.list", "Direct · upstream", "DIRECT"),
-    ("RULE-SET", f"{UPSTREAM_BASE}China/China.list", "China · upstream", "DIRECT"),
-    (
-        "DOMAIN-SET",
-        f"{UPSTREAM_BASE}China/China_Domain.list",
-        "China domains · upstream",
-        "DIRECT",
-    ),
-    ("RULE-SET", f"{UPSTREAM_BASE}Global/Global.list", "Global · upstream", "Proxy"),
-    (
-        "DOMAIN-SET",
-        f"{UPSTREAM_BASE}Global/Global_Domain.list",
-        "Global domains · upstream",
-        "Proxy",
-    ),
-)
-
 # Keep this order aligned with the remote profile. Earlier rules
 # intentionally win over broader domestic/geoip fallbacks later in the file.
 REMOTE_RULES: tuple[tuple[str, str, str], ...] = (
     ("AppleCN.list", "AppleCN · Apple", "Apple"),
     ("WeChat.list", "WeChat · Domestic", "DIRECT"),
     ("Direct.list", "Direct · Domestic", "DIRECT"),
-    ("Ads_Custom_Extra.list", "Ads_Custom_Extra · AdBlock", "AdBlock"),
+    ("Ads.list", "Ads · AdBlock", "AdBlock"),
     ("ChatGPT.list", "ChatGPT", "ChatGPT"),
     ("Claude.list", "Claude", "Claude"),
     ("Gemini.list", "Gemini", "Gemini"),
@@ -77,12 +49,28 @@ REMOTE_RULES: tuple[tuple[str, str, str], ...] = (
     ("Microsoft.list", "Microsoft", "Microsoft"),
     ("Game.list", "Game", "Games"),
     ("APNs.list", "APNs", "ApplePush"),
-    ("ChinaDomain.list", "ChinaDomain · Domestic", "DIRECT"),
+)
+
+PRECISE_DOMAIN_RULES: tuple[tuple[str, str, str], ...] = (
+    ("China.list", "China domains · precise", "DIRECT"),
+    ("Global.list", "Global domains · precise", "Proxy"),
+)
+
+REPOSITORY_RULES: tuple[tuple[str, str, str, str], ...] = tuple(
+    ("RULE-SET", filename, label, policy)
+    for filename, label, policy in REMOTE_RULES
+) + tuple(
+    ("DOMAIN-SET", filename, label, policy)
+    for filename, label, policy in PRECISE_DOMAIN_RULES
 )
 
 
 def remote_line(filename: str, policy: str) -> str:
     return f"RULE-SET,{REMOTE_BASE}{filename},{policy}"
+
+
+def repository_line(kind: str, filename: str, policy: str) -> str:
+    return f"{kind},{REMOTE_BASE}{filename},{policy}"
 
 
 def render_remote_block() -> str:
@@ -114,25 +102,18 @@ def render_remote_block() -> str:
     for filename, label, policy in REMOTE_RULES[18:25]:
         lines.extend((f"# {label}", remote_line(filename, policy)))
 
-    lines.extend(("", "# Pinned upstream routing fallbacks"))
-    for kind, url, label, policy in UPSTREAM_ROUTING_RULES:
-        lines.extend((f"# {label}", f"{kind},{url},{policy}"))
+    lines.extend(("", "# Bounded repository-maintained domain fallbacks"))
+    for filename, label, policy in PRECISE_DOMAIN_RULES:
+        lines.extend((f"# {label}", repository_line("DOMAIN-SET", filename, policy)))
 
-    lines.extend(("", "# ChinaDomain is a local supplement after upstream Global."))
-    filename, label, policy = REMOTE_RULES[26]
-    lines.extend((f"# {label}", remote_line(filename, policy)))
     return "\n".join(lines)
 
 
 def expected_remote_lines() -> set[str]:
     lines = {
-        remote_line(filename, policy)
-        for filename, _label, policy in REMOTE_RULES
+        repository_line(kind, filename, policy)
+        for kind, filename, _label, policy in REPOSITORY_RULES
     }
-    lines.update(
-        f"{kind},{url},{policy}"
-        for kind, url, _label, policy in UPSTREAM_ROUTING_RULES
-    )
     return lines
 
 

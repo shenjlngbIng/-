@@ -13,7 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from convert_to_remote_rules import REMOTE_BASE, REMOTE_RULES
+from convert_to_remote_rules import REMOTE_BASE, REPOSITORY_RULES
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,12 +32,13 @@ def active_count(path: Path) -> int:
 text = PROFILE.read_text(encoding="utf-8")
 lock = json.loads(LOCK.read_text(encoding="utf-8")) if LOCK.exists() else {}
 remote_sources = []
-for filename, _label, policy in REMOTE_RULES:
+for kind, filename, _label, policy in REPOSITORY_RULES:
     path = ROOT / "Rules" / filename
     if not path.is_file():
         raise SystemExit(f"missing remote source file: {path}")
     remote_sources.append(
         {
+            "kind": kind,
             "file": filename,
             "url": f"{REMOTE_BASE}{filename}",
             "policy": policy,
@@ -48,7 +49,7 @@ for filename, _label, policy in REMOTE_RULES:
 
 lock.update(
     {
-        "schema": 5,
+        "schema": 6,
         "mode": "remote-ruleset",
         "profile": "Surge iOS Privacy + Push R12",
         "generated": dt.date.today().isoformat(),
