@@ -13,45 +13,24 @@
     ],
     "description": "保留本地规则，与固定 Surge 上游精确去重；过滤 iOS 不支持的进程规则、未单独审核的新增 ASN 和非唯一归属的共享平台。"
   },
-  "routing": {
-    "repository": "blackmatrix7/ios_rule_script",
-    "commit": "ccc2d6b711007324bacb55cdfbbf7e36ad48145a",
-    "download_base": "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/",
+  "precise_domains": {
+    "schema": 1,
+    "mode": "repository-curated-domain-set",
+    "criteria": "仅收录可明确归属的服务域名；禁止公共后缀、关键词、共享云/CDN和跨策略重叠。",
     "sources": [
       {
-        "kind": "RULE-SET",
-        "path": "Direct/Direct.list",
+        "kind": "DOMAIN-SET",
+        "path": "Rules/China.list",
         "policy": "DIRECT",
-        "blob": "f1bd8dd8f99981f2b4433067da65513d649fcc01",
-        "sha256": "5d1d3198c0f525b167b1b3b1ccb7023fac55a696a8bb9d1b44e0028aed3d0f43"
-      },
-      {
-        "kind": "RULE-SET",
-        "path": "China/China.list",
-        "policy": "DIRECT",
-        "blob": "8ea635e9719ee44827d59651fe2d322fb7e4ad44",
-        "sha256": "15890ccb51dbc91f61aefb4fd4634c8cc030be7f2dc273dfd9e363e6d99e1451"
+        "active_entries": 306,
+        "sha256": "41bcedfa2bd322cfc2da82359a5eb6ca27d7868bd74a11fa1e88d29658e1f6ec"
       },
       {
         "kind": "DOMAIN-SET",
-        "path": "China/China_Domain.list",
-        "policy": "DIRECT",
-        "blob": "45e5e43e866f62c399b092b2ad961c4a95c4eae1",
-        "sha256": "28817e4a59359c6e6c264b6ed7d05dfc376548afb0aab50dbec5f60eb79e413f"
-      },
-      {
-        "kind": "RULE-SET",
-        "path": "Global/Global.list",
+        "path": "Rules/Global.list",
         "policy": "Proxy",
-        "blob": "062203b22e801cbad12b52c5ed3dca71cbc57b58",
-        "sha256": "2a6f77e82d05f194845cd0eac7924f01c571488dccf54eb23f730ecb7042be9a"
-      },
-      {
-        "kind": "DOMAIN-SET",
-        "path": "Global/Global_Domain.list",
-        "policy": "Proxy",
-        "blob": "e8039dee6871dbd8bdd25cf5c61e97c6aab054e7",
-        "sha256": "7d1fed729a4a246ae7886536a1f9e74e8cd354dc7a9b07c67a6c0778b9821983"
+        "active_entries": 116,
+        "sha256": "99adfaea6b33faab59b7ab55c7a016e9fa4c8e68ce7feec8666da4719b1225ad"
       }
     ]
   },
