@@ -1,17 +1,21 @@
 # Surge iOS Privacy + Push R12
 
-这是面向 Surge iOS 的公开、可审计、失败关闭型配置。当前包以 `ChinaDomain 顺序修正版` 为底稿，只恢复旧版已经验证过的代理测速与失败回落方式，同时保留现有规则快照、APNs、加密 DNS、广告拦截和国内外分流。
+这是面向 Surge iOS 的公开、可审计、失败关闭型远程规则集配置。当前包以 `ChinaDomain 顺序修正版` 为底稿，保留已审计的 `Rules/*.list` 内容，并把这些文件改为由同一仓库 Raw 地址在运行时加载。这样可以更新规则文件而不必重新生成主配置，同时仍由仓库锁文件、SHA-256 和审计脚本约束来源与内容。
 
 ## 先看结论
 
 - 主配置文件是根目录的 `Surge.conf`。
 - 订阅转换由手机中单独安装的官方 Sub-Store 模块完成。
-- 主配置不包含 `Sub-Store Core`、`Sub-Store Simple` 或 Vendor/Sub-Store 文件。
+- 主配置不包含 `Sub-Store Core`、`Sub-Store Simple` 或 Vendor/Sub-Store 文件；也不依赖任意第三方运行时规则源。
+- 运行时使用 27 个仓库自有 `RULE-SET`，地址统一为 `https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/`。
+- `Rules/*.list` 是规则源文件，`Rules/r10.lock.json` 是远程规则集清单，记录每个文件的 URL、策略、条目数和 SHA-256。
 - `AllServer` 使用 `fallback`，每 60 秒检查节点，单个节点超时 300 秒，启动前先评估可用性。
 - `Proxy` 默认优先使用 `AllServer`，然后才是地区组。
 - 加密 DNS 使用 `DIRECT` 出站并绕过代理规则，避免代理服务器域名被加密 DNS 请求反向解析而形成循环。
+- 公开配置不使用 `system` 或运营商 DNS；加密 DNS 使用阿里 DNS 的 HTTPS 与 TLS 双通道，并为其保留多地址引导映射。
 - 真实订阅链接、节点、密码、Token、MITM 私钥和证书不进入公开仓库。
 - `Fail-Closed` 显示红色是预期行为，它是故障关闭哨兵，不是真实代理节点。
+- 参考 Aegis 和主流 Surge 配置的模块化、DNS 接管、UDP 失败关闭和显式拒绝思路；Aegis 的 Scam/Quarantine 等高误报威胁情报源不直接启用。
 
 ## 适用环境
 
@@ -20,6 +24,7 @@
 | 客户端 | Surge iOS 5.14.6 或更高版本 |
 | 模式 | 规则模式 |
 | 推送 | `include-all-networks = true`、`include-apns = true` |
+| 蜂窝服务 | `include-cellular-services = true`，减少运营商蜂窝服务的 DNS 绕过 |
 | 订阅转换 | Surge 中单独启用官方 Sub-Store 模块 |
 | 仓库维护 | Python 3.10 或更高版本，仅用于审计和发布检查 |
 
@@ -123,12 +128,12 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 规则按照从上到下的第一条命中原则执行：
 
 ```text
-局域网和组播
-→ APNs
-→ 加密 DNS 与 DNS 端口阻断
-→ Apple、广告和服务规则
-→ Telegram 与国际服务
-→ ChinaDomain
+局域网与组播
+→ DNS 防绕过与端口阻断
+→ APNs 远程规则集
+→ Apple、国内服务和广告
+→ AI、流媒体、Telegram 与国际服务
+→ ChinaDomain 远程规则集
 → GEOIP,CN
 → STUN、QUIC、UDP
 → FINAL
@@ -140,11 +145,15 @@ https://raw.githubusercontent.com/shenjlngbIng/-/main/Surge.conf
 FINAL,Final,dns-failed
 ```
 
-本版不使用运行时远程 `RULE-SET`，不增加 P2P 端口 `DIRECT`，不把所有 UDP 强制改为直连，也不使用宽泛的 `DOMAIN-SUFFIX,cn,DIRECT`。
+`Final` 策略组同时提供 `Proxy` 和 `REJECT`。正常流量选择 `Proxy`；没有可用代理时可以明确选择 `REJECT`，避免误以为故障流量已经安全直连。未匹配流量最终进入 `Final`，并携带 `dns-failed`，不会因为远程规则集暂时失败而静默放行。
+
+本版使用运行时远程 `RULE-SET`，但所有运行时 URL 都指向本仓库的 `Rules/*.list`，不是任意第三方 URL。这样保留了原先的人工删减、规则顺序和策略映射，也允许规则文件独立更新。远程规则集不可用时，仍由后面的 `GEOIP,CN`、协议规则和最终失败关闭策略继续决定行为。
+
+本版不增加 P2P 端口 `DIRECT`，不把所有 UDP 强制改为直连，也不使用宽泛的 `DOMAIN-SUFFIX,cn,DIRECT`。UDP、STUN 和 QUIC 仍按显式策略处理，设备或代理不支持 UDP 时按 `REJECT` 处理。
 
 ### ChinaDomain 顺序
 
-`ChinaDomain` 放在国际服务规则之后、`GEOIP,CN` 之前。这样可以先命中 ChatGPT、YouTube、Netflix、Telegram、GitHub 等专用规则，再将未命中的国内域名交给 `Domestic`。
+`ChinaDomain.list` 远程规则集放在国际服务规则之后、`GEOIP,CN` 之前。这样可以先命中 ChatGPT、YouTube、Netflix、Telegram、GitHub 等专用规则，再将未命中的国内域名交给 `Domestic`。它不会覆盖前面已经命中的国际服务。
 
 不要把 ChinaDomain 移到国际服务规则之前，也不要用一个宽泛的中国域名规则替换现有快照。
 
@@ -156,11 +165,17 @@ APNs 使用独立 `ApplePush` Fallback：
 ApplePush = fallback, Proxy, DIRECT, interval=60, timeout=300, no-alert=0, hidden=0
 ```
 
-代理可用时优先使用代理，代理失败时回落直连。APNs 规则快照保存在 `Rules/APNs.list`，并已嵌入主配置。移动数据推送依赖 `include-apns = true`。
+代理可用时优先使用代理，代理失败时回落直连。APNs 规则源保存在 `Rules/APNs.list`，主配置通过远程 `RULE-SET` 加载它；更新规则文件后，Surge 会在外部资源更新时重新获取。移动数据推送依赖 `include-apns = true`。
 
 ### 加密 DNS
 
-本版保留 Cloudflare 与 Quad9 的加密 DNS 配置。`encrypted-dns-follow-outbound-mode = false` 让加密 DNS 连接固定使用 `DIRECT` 并绕过代理规则，避免节点服务器使用域名时出现 DNS 代理循环；DNS 请求本身仍然通过 HTTPS 加密。有效的 `DOH`、`DOH3`、`DOQ` 规则快照继续保留，无效的 `PROTOCOL,DOT` 和 `PROTOCOL,DNS` 规则不再保留。明文 DNS、DoT 和常见 DNS 绕过端口继续阻断。
+本版不把 `system`、运营商 DNS 或国内明文 DNS 写入公开配置。`dns-server = 223.5.5.5, 223.6.6.6` 仅作为加密 DNS 主机的引导与连通性用途；实际普通域名解析使用 `https://dns.alidns.com/dns-query` 与 `tls://dns.alidns.com`。Surge 在配置加密 DNS 后，普通 DNS 仅用于连通性测试和解析加密 DNS URL 的主机名，其他域名通过加密 DNS 解析。
+
+`encrypted-dns-follow-outbound-mode = false` 让加密 DNS 连接固定使用 `DIRECT` 并绕过代理规则，避免节点服务器使用域名时出现 DNS 代理循环。首选通道是 HTTPS，TLS 作为备用通道；两者都不会跟随普通代理规则。若 223.5.5.5/223.6.6.6 在“网络诊断”中出现响应，那只是加密 DNS 主机的引导/连通性检查，不代表普通域名解析退回明文 DNS。
+
+`[Host]` 中的三个 `dns.alidns.com` 映射是启动阶段的 DNS 引导地址，不是代理节点，也不会替代订阅转换。`include-cellular-services = true` 是参考 Aegis 加入的蜂窝服务接管设置；`include-local-networks = false` 则保留本配置的局域网兼容边界，避免影响 AirDrop、Bonjour 和局域网设备发现。公开配置不加入 `sub.store = 127.0.0.1`，订阅转换仍由单独安装的官方 Sub-Store 模块负责。
+
+有效的 `DOH`、`DOH3`、`DOQ` 协议规则继续保留；无效的 `PROTOCOL,DOT` 和 `PROTOCOL,DNS` 规则不再使用。53、853、8853 端口继续阻断，用于减少明文 DNS、DoT 和常见 DNS 绕过。
 
 ## 仓库覆盖与删除清单
 
@@ -208,6 +223,7 @@ CHANGELOG.md
 ├── tools/
 │   ├── audit_config.py
 │   ├── audit_rules.py
+│   ├── convert_to_remote_rules.py
 │   ├── embed_runtime_rules.py
 │   ├── generate_checksums.py
 │   ├── generate_release_manifest.py
@@ -233,13 +249,14 @@ python3 tools/audit_config.py
 python3 tools/audit_rules.py
 python3 tools/test_audit_config.py
 python3 tools/test_stage_surge_zip.py
+python3 tools/embed_runtime_rules.py
 python3 tools/generate_release_manifest.py
 python3 tools/generate_checksums.py
 sha256sum -c SHA256SUMS.txt
 cmp --silent SHA256SUMS.txt SHA256SUMS_fixed.txt
 ```
 
-修改 `Surge.conf` 后必须同步更新 `Rules/r10.lock.json`、`RELEASE_MANIFEST.txt`、`SHA256SUMS.txt` 和 `SHA256SUMS_fixed.txt`。不要手工改校验值，使用仓库中的脚本生成。
+修改 `Surge.conf` 或 `Rules/*.list` 后必须同步更新 `Rules/r10.lock.json`、`RELEASE_MANIFEST.txt`、`SHA256SUMS.txt` 和 `SHA256SUMS_fixed.txt`。不要手工改校验值，使用仓库中的脚本生成。虽然锁文件名称仍保留 `r10.lock.json` 以兼容旧工作流，但其当前 schema 为 5，模式是 `remote-ruleset`。
 
 ## 安全提醒
 
@@ -249,6 +266,28 @@ cmp --silent SHA256SUMS.txt SHA256SUMS_fixed.txt
 - 如果私钥或订阅链接已经发送到聊天、Issue、日志或仓库，应立即更换订阅 Token，并重新生成 Surge MITM 证书。
 - 遇到 `sub.store` 证书无效时，不要信任异常证书，也不要关闭 TLS 安全校验。
 
+## 远程规则集清单
+
+主配置当前引用 27 个仓库自有规则集，策略映射由 `tools/convert_to_remote_rules.py` 和 `Rules/r10.lock.json` 共同固定：
+
+| 规则文件 | 策略 | 用途 |
+|---|---|---|
+| `APNs.list` | `ApplePush` | 系统推送 |
+| `AppleCN.list` | `Apple` | Apple 国内服务 |
+| `WeChat.list`、`Direct.list`、`ChinaDomain.list` | `Domestic` | 国内服务与精选直连 |
+| `Ads_Custom_Extra.list` | `AdBlock` | 广告与追踪 |
+| `ChatGPT.list`、`Claude.list`、`Gemini.list` | 对应策略组 | AI 服务 |
+| `YouTube.list`、`Netflix.list`、`Disney.list`、`HBO.list`、`PrimeVideo.list`、`Emby.list` | 对应策略组 | 视频服务 |
+| `TikTok.list`、`Bahamut.list`、`BiliBiliIntl.list`、`Spotify.list`、`ProxyMedia.list` | 对应策略组 | 音视频及区域服务 |
+| `Telegram.list` | `Telegram` | Telegram |
+| `Github.list`、`Twitter.list`、`Google.list`、`OneDrive.list`、`Microsoft.list`、`Game.list` | 对应策略组 | 国际服务和游戏 |
+
+规则文件必须保留在仓库中。远程化不是删除 `Rules/`，而是把主配置中的大段嵌入文本替换成可审计的远程引用。每次修改规则源后，应重新执行锁文件、清单和校验和生成脚本。
+
+## 为什么不直接启用 Aegis 威胁情报列表
+
+Aegis 的远程规则集结构值得参考，但 `Scam_Block`、`Quarantine_Block`、`Malware_IOC_Block` 等列表属于外部威胁情报。它们规模大、更新快，可能把地区性站点、公共服务或用户需要的网站误判为拒绝目标。当前版本只吸收模块化远程引用、DNS 接管、UDP 失败关闭、显式 `REJECT` 和审计锁定这些可验证的结构，不把未经独立复核的高误报列表加入主链路。
+
 ## 版本边界
 
-本版本解决的是配置结构、无效规则、ChinaDomain 顺序、节点测速和失败回落问题。它不会保证任何机场节点永久可用，也不会替换服务商提供的节点协议、密码或服务器。
+本版本解决的是远程规则集迁移、配置结构、无效规则、ChinaDomain 顺序、节点测速和失败回落问题。它不会保证任何机场节点永久可用，也不会替换服务商提供的节点协议、密码或服务器。远程规则集的可用性还取决于 GitHub Raw 的网络可达性；主配置因此保留显式的失败关闭边界。

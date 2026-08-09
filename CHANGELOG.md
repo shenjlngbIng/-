@@ -1,5 +1,61 @@
 # 更新日志
 
+## 2026-08-09 R12.6 DNS 参考配置融合
+
+### 修正
+
+- 参考 Aegis，将加密 DNS 调整为阿里 DNS 的 HTTPS 与 TLS 双通道，并增加 IPv4/IPv6 引导映射。
+- 将 `dns-server` 引导地址改为国内可达的阿里 DNS 地址，避免 1.1.1.1/9.9.9.9 在移动网络诊断中超时。
+- 开启 `include-cellular-services = true`，减少蜂窝服务流量绕过 Surge DNS 接管的可能性。
+
+### 取舍
+
+- 保留 `include-local-networks = false`，避免为了 DNS 接管破坏 AirDrop、Bonjour 和局域网设备发现。
+- Rabbit-Developer、Rabbit-EN、Lucky 和 Coldvvater 配置中的明文 DNS、`system` DNS 或注释状态加密 DNS 未直接照搬；只吸收其中经验证的规则集和兼容性结构。
+
+## 2026-08-09 R12.5 远程规则集版
+
+### 修正
+
+- 将 27 个已审计的 `Rules/*.list` 改为仓库自有 Raw URL 的运行时 `RULE-SET`，保留原有策略映射和 `ChinaDomain` 顺序。
+- 将 APNs 规则改为远程 `RULE-SET`，保留 `ApplePush` 代理优先、直连回落设计。
+- `Final` 策略组加入显式 `REJECT` 选择，远程规则集或节点异常时不静默直连。
+- 将审计器、规则锁、回归测试、README、发布清单和 SHA-256 校验同步到 schema 5 的 `remote-ruleset` 模式。
+
+### 边界
+
+- 只吸收 Aegis 和主流配置的模块化远程规则、DNS 接管、UDP 失败关闭和显式拒绝思路。
+- 不直接启用未经独立复核的 `Scam_Block`、`Quarantine_Block` 或其他外部威胁情报列表，避免高误报进入主规则链路。
+- 不加入 `Sub-Store Core`、`Sub-Store Simple`、Vendor 文件、真实订阅、节点、Token、密码或证书私钥。
+
+## 2026-08-09 R12.4 DNS 隐私边界修正
+
+### 修正
+
+- 撤回 `system, 223.5.5.5, 119.29.29.29`，避免把系统或运营商 DNS 纳入公开隐私配置。
+- 普通 DNS 恢复为 `1.1.1.1, 9.9.9.9`，仅用于加密 DNS 主机的引导与连通性用途。
+- 保留阿里 DNS 与 `doh.pub` 的 HTTPS 加密 DNS，以及两个 DoH 主机的固定映射。
+- 同步审计器、锁文件、README、发布清单和 SHA-256 校验值。
+
+### 边界
+
+- 网络诊断中 1.1.1.1/9.9.9.9 超时不应通过加入 `system` 或运营商 DNS 来掩盖。
+- 不写入真实订阅地址、节点、证书私钥或重复 Sub-Store 模块。
+
+## 2026-08-09 R12.3 国内 DNS 可达性修正
+
+### 修正
+
+- 将普通 DNS 恢复为 `system, 223.5.5.5, 119.29.29.29`。
+- 将加密 DNS 恢复为阿里 DNS 与 `doh.pub`，并保留 `encrypted-dns-follow-outbound-mode = false`。
+- 增加两个加密 DNS 主机的固定引导映射，并将对应主机规则设为 `DIRECT`。
+- 同步审计器、锁文件、README、发布清单和 SHA-256 校验值。
+
+### 边界
+
+- 不修改或写入真实 Sub-Store 订阅地址；公开配置仍使用占位符。
+- 不加入 `Sub-Store Core`、`Sub-Store Simple`、Vendor 文件、节点或证书私钥。
+
 ## 2026-08-09 R12.2 加密 DNS 循环修正
 
 ### 修正
