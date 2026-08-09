@@ -1,5 +1,5 @@
 # 规则名称: ChinaDomain
-# 规则统计: 867
+# 规则统计: 863
 
 DOMAIN,acg.tv
 DOMAIN,app.viayoo.com
@@ -160,7 +160,6 @@ DOMAIN-SUFFIX,baishancdnx.cn
 DOMAIN-SUFFIX,baixing.com
 DOMAIN-SUFFIX,baixing.net
 DOMAIN-SUFFIX,baomitu.com
-DOMAIN-SUFFIX,battle.net
 DOMAIN-SUFFIX,bcebos.com
 DOMAIN-SUFFIX,bcelive.com
 DOMAIN-SUFFIX,bdatu.com
@@ -184,7 +183,6 @@ DOMAIN-SUFFIX,biliimg.com
 DOMAIN-SUFFIX,bilivideo.cn
 DOMAIN-SUFFIX,bilivideo.com
 DOMAIN-SUFFIX,bilivideo.net
-DOMAIN-SUFFIX,blizzard.com
 DOMAIN-SUFFIX,blzstatic.cn
 DOMAIN-SUFFIX,boc.cn
 DOMAIN-SUFFIX,bosszhipin.com
@@ -365,8 +363,6 @@ DOMAIN-SUFFIX,freshhema.com
 DOMAIN-SUFFIX,freshippo.com
 DOMAIN-SUFFIX,fun.tv
 DOMAIN-SUFFIX,funshion.com
-DOMAIN-SUFFIX,futu5.com
-DOMAIN-SUFFIX,futunn.com
 DOMAIN-SUFFIX,gamersky.com
 DOMAIN-SUFFIX,gaode.com
 DOMAIN-SUFFIX,gaokao.cn
