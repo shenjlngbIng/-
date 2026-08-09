@@ -2,7 +2,7 @@ Surge iOS Privacy + Push R12 release manifest
 Generated: 2026-08-09
 Files: 52
 
-40b8a85f35c0d08f3a4099ea4dfe0c3287ebac09fe00d4dd582937ed80714ec7  .github/workflows/audit.yml
+182169f45d88dfc0ac70215f7b9689d4b258a534b0b71c0efe9084043b8f40c6  .github/workflows/audit.yml
 2773a239886bc9b11f95a00a51cd477adc761fbfce7a3e99c3bbf3c9cdfe8dd3  .github/workflows/unpack.yml
 dba853d3f3f7d6c1532fc1204109c43442cd4cad9013040a94589d0a1c08e5f6  .gitignore
 094978d5fa927d09e8a56f2ca4b7a0e695be41c95e8995b2e5baf20760ced305  CHANGELOG.md
