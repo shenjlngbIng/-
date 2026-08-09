@@ -4,10 +4,17 @@ from __future__ import annotations
 import hashlib, json, sys
 from pathlib import Path
 
-from convert_to_remote_rules import REMOTE_BASE, REMOTE_RULES
+from convert_to_remote_rules import (
+    REMOTE_BASE,
+    REMOTE_RULES,
+    UPSTREAM_BASE,
+    UPSTREAM_COMMIT,
+    UPSTREAM_ROUTING_RULES,
+)
 ROOT=Path(__file__).resolve().parent.parent
 PROFILE=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else ROOT/'Surge.conf'
 LOCK=ROOT/'Rules/r10.lock.json'
+UPSTREAM_LOCK=ROOT/'Rules/upstreams.lock.json'
 def fail(msg): raise AssertionError(msg)
 def parse(text):
     sections={}; current=None
@@ -58,9 +65,12 @@ if 'policy-path=https://example.invalid/REPLACE_WITH_SUB_STORE_URL' not in all_s
     fail('public profile must keep the non-routable subscription placeholder')
 if not any(part.strip() == 'REJECT' for part in groups.get('Final','').split(',')):
     fail('Final must expose the strict REJECT choice')
+for region in ('HongKong', 'TaiWan', 'Japan', 'Singapore', 'America'):
+    if '(?!.*(?:专用|專用|解锁|解鎖))' in groups.get(region, ''):
+        fail(f'{region} must not exclude streaming-optimized nodes')
 rules=active(sec['Rule'])
 if rules[-1]!='FINAL,Final,dns-failed': fail('FINAL invariant failed')
-remote_rules = [x for x in rules if x.startswith('RULE-SET,')]
+remote_rules = [x for x in rules if x.startswith(f'RULE-SET,{REMOTE_BASE}')]
 expected_remote_rules = {
     f'RULE-SET,{REMOTE_BASE}{filename},{policy}'
     for filename, _label, policy in REMOTE_RULES
@@ -72,9 +82,82 @@ if set(remote_rules) != expected_remote_rules or len(remote_rules) != len(expect
 for rule in remote_rules:
     fields = rule.split(',')
     if len(fields) != 3 or not fields[1].startswith(REMOTE_BASE):
-        fail(f'RULE-SET must use the repository Raw base: {rule}')
+        fail(f'RULE-SET must use the repository CDN base: {rule}')
     if not fields[1].startswith('https://') or '..' in fields[1]:
         fail(f'unsafe remote RULE-SET URL: {rule}')
+expected_routing_rules = {
+    f'{kind},{url},{policy}' for kind, url, _label, policy in UPSTREAM_ROUTING_RULES
+}
+upstream_lock = json.loads(UPSTREAM_LOCK.read_text(encoding='utf-8'))
+routing_lock = dict(upstream_lock.get('routing', {}))
+if routing_lock.get('commit') != UPSTREAM_COMMIT:
+    fail('routing upstream commit is not pinned to the profile')
+if routing_lock.get('download_base') != UPSTREAM_BASE:
+    fail('routing upstream download base is stale')
+expected_from_lock = {
+    f"{item['kind']},{UPSTREAM_BASE}{item['path']},{item['policy']}"
+    for item in routing_lock.get('sources', [])
+}
+if expected_from_lock != expected_routing_rules:
+    fail('routing upstream lock inventory does not match the profile')
+actual_routing_rules = {
+    rule
+    for rule in rules
+    if rule.startswith(('RULE-SET,https://cdn.jsdelivr.net/gh/blackmatrix7/',
+                        'DOMAIN-SET,https://cdn.jsdelivr.net/gh/blackmatrix7/'))
+}
+if actual_routing_rules != expected_routing_rules:
+    missing = sorted(expected_routing_rules - actual_routing_rules)
+    unexpected = sorted(actual_routing_rules - expected_routing_rules)
+    fail(f'upstream routing inventory mismatch: missing={missing}, unexpected={unexpected}')
+for rule in actual_routing_rules:
+    fields = rule.split(',', 2)
+    if len(fields) != 3 or fields[0] not in {'RULE-SET', 'DOMAIN-SET'}:
+        fail(f'upstream routing rule is malformed: {rule}')
+    if not fields[1].startswith('https://cdn.jsdelivr.net/gh/blackmatrix7/'):
+        fail(f'upstream routing URL must use the pinned CDN: {rule}')
+expected_external_rules = expected_remote_rules | expected_routing_rules
+actual_external_rules = {
+    rule for rule in rules if rule.startswith(('RULE-SET,', 'DOMAIN-SET,'))
+}
+if actual_external_rules != expected_external_rules:
+    missing = sorted(expected_external_rules - actual_external_rules)
+    unexpected = sorted(actual_external_rules - expected_external_rules)
+    fail(f'external rule inventory mismatch: missing={missing}, unexpected={unexpected}')
+if '# Embedded rules' in text or 'embedded_sources' in text:
+    fail('embedded rule content is forbidden; use external RULE-SET/DOMAIN-SET references')
+snapshot_rules = {
+    line.strip()
+    for path in (ROOT / 'Rules').glob('*.list')
+    for line in path.read_text(encoding='utf-8-sig').splitlines()
+    if line.strip() and not line.lstrip().startswith(('#', ';', '//'))
+}
+embedded = sorted(set(rules) & snapshot_rules)
+if embedded:
+    fail(f'profile contains embedded rule snapshot content: {embedded[:3]}')
+
+def rule_position(prefix: str) -> int:
+    for index, rule in enumerate(rules):
+        if rule.startswith(prefix):
+            return index
+    fail(f'missing ordering anchor: {prefix}')
+
+youtube_pos = rule_position(f'RULE-SET,{REMOTE_BASE}YouTube.list,')
+google_pos = rule_position(f'RULE-SET,{REMOTE_BASE}Google.list,')
+china_pos = rule_position('RULE-SET,https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/China/China.list,')
+global_pos = rule_position('RULE-SET,https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/Global/Global.list,')
+global_domain_pos = rule_position('DOMAIN-SET,https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@ccc2d6b711007324bacb55cdfbbf7e36ad48145a/rule/Surge/Global/Global_Domain.list,')
+local_china_pos = rule_position(f'RULE-SET,{REMOTE_BASE}ChinaDomain.list,')
+geoip_pos = rule_position('GEOIP,CN,DIRECT')
+if youtube_pos >= google_pos:
+    fail('YouTube must precede Google')
+for filename, _label, _policy in REMOTE_RULES:
+    if filename == 'ChinaDomain.list':
+        continue
+    if rule_position(f'RULE-SET,{REMOTE_BASE}{filename},') >= global_pos:
+        fail(f'{filename} must precede the upstream Global fallback')
+if not (china_pos < global_pos < global_domain_pos < local_china_pos < geoip_pos):
+    fail('upstream China/Global rules and local ChinaDomain supplement are out of order')
 required_rules = [
     'PROTOCOL,DOH,EncryptedDNS',
     'PROTOCOL,DOH3,EncryptedDNS',

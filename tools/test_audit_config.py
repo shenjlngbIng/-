@@ -29,12 +29,12 @@ assert run(BASE).returncode == 0, "baseline"
 mutations = {
     "final_open": ("\nFINAL,Final,dns-failed\n", "\nFINAL,DIRECT\n"),
     "telegram_direct": (
-        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/Telegram.list,Telegram\n",
-        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/Telegram.list,DIRECT\n",
+        "\nRULE-SET,https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/Telegram.list,Telegram\n",
+        "\nRULE-SET,https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/Telegram.list,DIRECT\n",
     ),
     "apns_direct": (
-        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/APNs.list,ApplePush\n",
-        "\nRULE-SET,https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/APNs.list,DIRECT\n",
+        "\nRULE-SET,https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/APNs.list,ApplePush\n",
+        "\nRULE-SET,https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/APNs.list,DIRECT\n",
     ),
     "capture_apns": ("\ninclude-apns = true\n", "\ninclude-apns = false\n"),
     "capture_all": ("\ninclude-all-networks = true\n", "\ninclude-all-networks = false\n"),
@@ -74,12 +74,12 @@ mutations = {
         "\nRULE-SET,https://example.invalid/a.list,Proxy\nFINAL,Final,dns-failed\n",
     ),
     "remote_host": (
-        "https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/ChatGPT.list",
+        "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/ChatGPT.list",
         "https://example.invalid/ChatGPT.list",
     ),
     "remote_http": (
-        "https://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/ChatGPT.list",
-        "http://raw.githubusercontent.com/shenjlngbIng/-/main/Rules/ChatGPT.list",
+        "https://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/ChatGPT.list",
+        "http://cdn.jsdelivr.net/gh/shenjlngbIng/-@main/Rules/ChatGPT.list",
     ),
 }
 

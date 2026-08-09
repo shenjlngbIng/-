@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Refresh R12 metadata after converting to remote RULE-SET sources.
+"""Refresh R12 metadata for remote RULE-SET sources.
 
-The filename is retained for compatibility with older maintenance commands;
-the remote profile no longer embeds the rule contents into Surge.conf.
+The historical filename is retained for compatibility with older maintenance
+commands. It only refreshes metadata and never embeds rule contents into
+Surge.conf.
 """
 
 from __future__ import annotations

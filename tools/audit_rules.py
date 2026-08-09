@@ -107,7 +107,8 @@ if profile.is_file():
     actual_remote = {
         line.split(",", 2)[1]: line.split(",", 2)[2]
         for line in active_rules
-        if line.startswith("RULE-SET,") and len(line.split(",", 2)) == 3
+        if line.startswith(f"RULE-SET,{REMOTE_BASE}")
+        and len(line.split(",", 2)) == 3
     }
     expected_remote = {item["url"]: item["policy"] for item in raw_sources}
     if actual_remote != expected_remote:
